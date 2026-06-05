@@ -10,7 +10,10 @@ Organize peladas amadoras de futebol: lista de presença, sorteio de times, plac
 
 ## Status
 
-🚧 **Em fase de design.** Nenhum código ainda — apenas documentação.
+🏗️ **Bootstrap completo.** Stack instalado, tooling configurado, estrutura definida.
+Próxima etapa: schema do banco + auth + primeira tela funcional (F1).
+
+### Documentos
 
 - 📄 [`ARCHITECTURE.md`](./ARCHITECTURE.md) — visão completa do produto, stack, modelo de dados e roteiro
 - 📐 [`CODING_STANDARDS.md`](./CODING_STANDARDS.md) — padrões de código, naming, tooling e design patterns
@@ -43,11 +46,29 @@ Organize peladas amadoras de futebol: lista de presença, sorteio de times, plac
 
 ---
 
-## Começando (depois do scaffolding)
+## Começando
+
+Requisitos: **Node 20+**, **pnpm 10+**, **PostgreSQL** (recomendado: Supabase).
 
 ```bash
 pnpm install
-pnpm dev
+cp .env.example .env.local   # preencher Supabase, Google OAuth, Auth.js secret
+pnpm dev                     # http://localhost:3000
 ```
 
-> Variáveis de ambiente: copiar `.env.example` → `.env.local` e preencher (Supabase, Google OAuth).
+Scripts disponíveis:
+
+```bash
+pnpm dev          # dev server (Turbopack)
+pnpm build        # build de produção
+pnpm typecheck    # tsc --noEmit
+pnpm lint         # biome check
+pnpm lint:fix     # biome check --write
+pnpm format       # biome format --write
+pnpm test         # vitest (watch)
+pnpm test:ci      # vitest run --coverage
+pnpm test:e2e     # playwright
+pnpm db:generate  # drizzle-kit (gerar migration)
+pnpm db:migrate   # rodar migrations
+pnpm db:studio    # abrir Drizzle Studio
+```
