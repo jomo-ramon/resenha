@@ -9,6 +9,15 @@
 
 export default {
   extends: ["@commitlint/config-conventional"],
+  // Ignore tool-generated commits that don't follow Conventional Commits
+  // (e.g. Cursor's internal "checkpoint" commits when switching workspaces,
+  // automatic merge commits, revert commits).
+  ignores: [
+    (message) => message.startsWith("checkpoint"),
+    (message) => message.startsWith("Merge "),
+    (message) => message.startsWith("Revert "),
+    (message) => message.startsWith("WIP"),
+  ],
   rules: {
     "type-enum": [
       2,
