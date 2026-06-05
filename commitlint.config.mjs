@@ -26,7 +26,9 @@ export default {
         "build", // Build system changes
       ],
     ],
-    "subject-case": [2, "always", "lower-case"],
+    // Allow common acronyms (CI, API, CRUD) by disallowing only fully
+    // capitalized or "Sentence case" subjects — not enforcing lower-case strictly.
+    "subject-case": [2, "never", ["sentence-case", "start-case", "pascal-case", "upper-case"]],
     "subject-empty": [2, "never"],
     "subject-full-stop": [2, "never", "."],
     "header-max-length": [2, "always", 100],
