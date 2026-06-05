@@ -930,11 +930,27 @@ SÁBADO (pós)
 
 ---
 
-## 7. Decisões em aberto (pra revisitar)
+## 7. Decisões
 
-- [ ] **Times com mais de 2** (rodízio) — o quanto suportar na F1?
-- [ ] **Lista de espera**: vira presença automaticamente quando alguém desmarca, ou pede confirmação?
-- [ ] **Edição de eventos** após `finished`: só admin? Período limitado?
-- [ ] **Múltiplos juízes** numa partida — quem prevalece se houver conflito?
-- [ ] **Push notification** — entra na F1 (escopo PWA) ou empurra pra F3?
-- [ ] **Compartilhar resultado no WhatsApp** — gerar imagem? texto formatado?
+### 7.1 Tomadas ✅
+
+- [x] **Times na F1**: só 2 times na UI. Schema aceita N pra evitar refactor na F2 (rodízio).
+- [x] **Lista de espera**: auto-promove o próximo + notifica ("Você entrou na lista!"). Detalhe em `ARCHITECTURE.md` §5.4.
+- [x] **Edição de eventos pós-jogo**: juiz e admin podem editar/remover por **24h** após `finished`. Depois disso, congela (só admin via audit).
+- [x] **Múltiplos juízes**: vários membros podem ter `role: 'referee'`, mas só **1 ativo no modo juiz por vez** (lock otimista). Admin pode forçar release.
+
+### 7.2 Em aberto (não bloqueiam F1)
+
+- [ ] **Push notification** — F1 (PWA) ou F3?
+- [ ] **Compartilhar resultado no WhatsApp** — imagem ou texto formatado?
+
+## 8. Implicações de UI das decisões tomadas
+
+Pra não esquecer na hora de codar:
+
+- **Sorteio (§3.9)**: opção "Capitães escolhem" e "Manual" são as principais na F1. Botão `[N times]` (mais de 2) fica oculto. O wireframe atual já assume 2 times.
+- **Lista de presença (§3.8.a)**: quando jogador desmarca, exibir toast "Próximo da lista de espera foi promovido". A UI do waitlist precisa atualizar em tempo real (revalidação após a action).
+- **Modo juiz (§3.10)**: ao abrir, checar se já tem outro juiz ativo. Se sim, mostrar:
+  > "Roberto já está no modo juiz. [Pedir pra liberar] (admin) ou [Aguardar]"
+- **Detalhe partida finalizada (§3.8.c)**: dentro de 24h após `finished`, mostrar botão `[✏️ Editar]` ao lado dos eventos pra juiz/admin. Após 24h, esconder pra juiz e manter pra admin com aviso "Edição tardia — será logada".
+- **Wizard criar pelada (§3.5)**: campo `sport` fica oculto no MVP (sempre `'football'`). Adicionar quando suportar outros.

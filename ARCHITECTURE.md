@@ -124,8 +124,8 @@ Cada fase é **um produto utilizável** por si só. Não passar pra próxima sem
 ```
 ┌──────────────────────────────────────────────┐
 │  Frontend + Backend                          │
-│  Next.js 15 (App Router) + TypeScript        │
-│  Tailwind CSS + shadcn/ui                    │
+│  Next.js 16 (App Router) + React 19 + TS     │
+│  Tailwind CSS v4 + shadcn/ui                 │
 │  next-pwa (PWA)                              │
 └──────────────────────────────────────────────┘
                     │
@@ -148,7 +148,7 @@ Cada fase é **um produto utilizável** por si só. Não passar pra próxima sem
 
 | Escolha | Por quê |
 |---|---|
-| **Next.js 15 (App Router)** | Frontend + backend num único codebase. Server Actions eliminam camada de API boilerplate. Deploy trivial na Vercel. |
+| **Next.js 16 (App Router) + React 19** | Frontend + backend num único codebase. Server Actions eliminam camada de API boilerplate. Deploy trivial na Vercel. |
 | **TypeScript** | Pega bugs cedo. Indispensável num app que vai crescer em camadas (F1→F4). |
 | **Tailwind + shadcn/ui** | Você é dono do código dos componentes (copy-paste). UI lindo sem ser designer. Tema fácil de customizar pra cores de cada pelada. |
 | **next-pwa** | PWA com 1 plugin. Service worker pra offline, instalável no celular. |
@@ -252,6 +252,7 @@ type Pelada = {                   // tenant — termo PT mantido
   name: string
   description?: string
   logoUrl?: string
+  sport: Sport                    // 'football' (MVP); preparado p/ 'futsal' | 'society'
   weekday: Weekday                // 'monday' | ... | 'sunday'
   startTime: string               // "16:00"
   location: string
@@ -261,6 +262,9 @@ type Pelada = {                   // tenant — termo PT mantido
   ownerUserId: UserId
   createdAt: Date
 }
+
+type Sport = 'football'           // MVP aceita só 'football'
+                                  // (campo existe pra evitar migration futura)
 
 type Membership = {               // User ↔ Pelada
   id: MembershipId
@@ -280,6 +284,8 @@ type Match = {
   scheduledFor: Date
   locationOverride?: string
   status: MatchStatus             // FSM — ver lib/domain/match-state-machine.ts
+  activeRefereeId?: MembershipId  // lock: quem está em "modo juiz" agora
+  finishedAt?: Date               // marca quando virou 'finished' (usado p/ janela de edição 24h)
   notes?: string
   createdAt: Date
 }
@@ -299,6 +305,7 @@ type RosterEntry = {              // presença na lista
   status: 'confirmed' | 'declined' | 'waitlist'
   listPosition: number            // 1, 2, 3...
   respondedAt: Date
+  promotedFromWaitlistAt?: Date   // marca quando saiu da waitlist (auto-promoção)
 }
 
 type Team = {
@@ -367,6 +374,48 @@ type PlayerAchievement = { id; membershipId; achievementId; unlockedAt; matchId?
 - **`Match.status` é uma máquina de estado** (`lib/domain/match-state-machine.ts`). Transições permitidas validadas no domínio (ex: não pode ir de `scheduled` direto pra `finished`).
 - **Branded IDs**: `UserId`, `PeladaId`, `MatchId` etc. são tipos branded — o compilador rejeita misturar (ex: passar um `UserId` onde se espera `PeladaId`). Reforça segurança de tipos sem custo em runtime.
 - **Status enums em snake_case minúsculo** (`'in_progress'`, `'roster_open'`): casa com convenção de DB/JSON e fica neutro entre idiomas.
+
+### 5.4 Regras de negócio chave
+
+Conjunto de invariantes que **devem** estar implementadas no domínio (`lib/domain/`) e cobertas por testes unitários:
+
+#### Lista de espera — auto-promoção
+Quando um `RosterEntry` muda de `confirmed → declined`:
+1. Encontra o primeiro `RosterEntry` com status `'waitlist'` ordenado por `listPosition`.
+2. Atualiza pra `'confirmed'`, seta `promotedFromWaitlistAt = now()`.
+3. Dispara notificação ("Você entrou na lista da próxima partida!").
+4. Reordena `listPosition` dos demais waitlist (decrementa).
+
+Implementação: transação única no `RosterService.decline()`.
+
+#### Modo juiz — lock otimista
+Toda pelada pode ter `N` membros com `role: 'referee'`, mas **apenas 1 ativo** no modo juiz por vez.
+
+- Ao entrar no modo juiz: `Match.activeRefereeId = currentMembership.id` (com `UPDATE ... WHERE activeRefereeId IS NULL` — se afetar 0 linhas, outro juiz já está ativo).
+- Ao sair (manual ou inatividade > 30min): `activeRefereeId = NULL`.
+- Admin da pelada pode **forçar liberação** (`POST /api/match/[id]/release-referee-lock`).
+
+#### Edição de eventos pós-jogo
+`MatchEvent` é editável/removível por `juiz` ou `admin` **até 24h após `Match.finishedAt`**.
+
+Helper de domínio:
+```ts
+function canEditMatchEvent(match: Match, now: Date): boolean {
+  if (match.status !== 'finished' || !match.finishedAt) return false
+  const hoursElapsed = (now.getTime() - match.finishedAt.getTime()) / 3_600_000
+  return hoursElapsed <= 24
+}
+```
+
+Após 24h, somente `admin` (não juiz) pode editar — toda alteração vira entrada em `AuditLog`. *(AuditLog entra na F2.)*
+
+#### Times na F1 — schema N, UI 2
+- `Team` aceita N por partida no schema.
+- UI da F1 hardcoda 2 times no fluxo de sorteio.
+- Domínio (`TeamDraftService`) já recebe `teamCount: number` desde o início — F2 só desbloqueia UI sem refactor.
+
+#### Multi-esporte — futuro-friendly
+`Pelada.sport` é obrigatório e default `'football'`. Tipo `Sport` é uma string union. Quando der suporte a `'futsal'`, é só ampliar o tipo + UI condicional. Schema não precisa migrar.
 
 ---
 
@@ -568,13 +617,28 @@ Ordem sugerida (cada item ≈ 1 sessão de dev focada):
 
 ---
 
-## 10. Decisões em aberto (pra revisitar)
+## 10. Decisões
 
-- [ ] Cobrar mensalidade por pelada ou por jogador?
-- [ ] Suporte multi-esporte (vôlei, futsal) — só futebol no MVP?
-- [ ] Integração com WhatsApp oficial via API ou só link share?
-- [ ] Foto da partida (galeria) entra em F2 ou F3?
-- [ ] Sistema de "ranking ELO" entre jogadores (algoritmo de matchmaking de times)?
+### 10.1 Decisões tomadas ✅
+
+- [x] **Multi-esporte**: só futebol no MVP, mas com campo `sport: 'football'` em `Pelada` desde já — facilita adicionar futsal/society/society depois sem migration dolorosa.
+- [x] **Times na F1**: schema aceita N times, UI da F1 só renderiza/permite 2. Rodízio entra na F2. *(Decisão de produto registrada em `WIREFRAMES_F1.md` §8.)*
+- [x] **Lista de espera**: auto-promove quando alguém desmarca + dispara notificação ("Você entrou na lista!"). *(§5.4)*
+- [x] **Edição de eventos pós-jogo**: juiz e admin podem editar por **24h** após `finished`. Depois disso, congela. Admin global continua podendo via audit log. *(§5.4)*
+- [x] **Múltiplos juízes**: vários membros podem ter `role: 'referee'`, mas apenas **1 ativo por vez** no modo juiz (lock otimista via `Match.activeRefereeId`). *(§5.4)*
+
+### 10.2 Em aberto (não bloqueiam a F1)
+
+- [ ] **Push notification** — F1 (PWA) ou F3? *(começar sem; ver demanda real)*
+- [ ] **Compartilhar resultado no WhatsApp** — imagem (canvas) ou texto formatado? *(começar com texto)*
+- [ ] **Foto da partida (galeria)** — F2 ou F3?
+- [ ] **Algoritmo de sorteio equilibrado** — fórmula final (média de notas + ajuste de posição). Detalhar quando F2 começar.
+
+### 10.3 Em aberto (estratégicas — F4+)
+
+- [ ] **Modelo de cobrança** — por pelada ou por jogador?
+- [ ] **WhatsApp** — API oficial ou só link share?
+- [ ] **Ranking ELO** — algoritmo entre jogadores?
 
 ---
 

@@ -15,6 +15,8 @@ Organize peladas amadoras de futebol: lista de presença, sorteio de times, plac
 - 📄 [`ARCHITECTURE.md`](./ARCHITECTURE.md) — visão completa do produto, stack, modelo de dados e roteiro
 - 📐 [`CODING_STANDARDS.md`](./CODING_STANDARDS.md) — padrões de código, naming, tooling e design patterns
 - 🎨 [`WIREFRAMES_F1.md`](./WIREFRAMES_F1.md) — sitemap, fluxos e wireframes textuais das telas da F1
+- 🚀 [`SETUP.md`](./SETUP.md) — roteiro operacional pra bootstrappar o projeto
+- 🤖 [`AGENTS.md`](./AGENTS.md) — instruções pra agentes de IA (Cursor, Claude, etc.) trabalhando no repo
 
 ---
 
