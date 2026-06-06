@@ -3,14 +3,19 @@
  * `getPeladaContext(slug)` and pass the verified peladaId here.
  */
 
-import { and, asc, desc, eq, gte, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, ne } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
   type Match,
+  type MatchEvent,
+  matchEvents,
   matches,
   memberships,
   type RosterEntryStatus,
   rosterEntries,
+  type Team,
+  teamPlayers,
+  teams,
   users,
 } from "@/lib/db/schema";
 
@@ -63,9 +68,20 @@ export type RosterRow = {
   nickname: string | null;
 };
 
+export type TeamWithPlayers = {
+  team: Team;
+  playerMembershipIds: string[];
+};
+
+export type MatchEventRow = MatchEvent & {
+  displayName: string;
+};
+
 export type MatchDetail = {
   match: Match;
   roster: RosterRow[];
+  teams: TeamWithPlayers[];
+  events: MatchEventRow[];
 };
 
 export async function getMatchWithRoster(
@@ -109,7 +125,59 @@ export async function getMatchWithRoster(
     nickname: r.nickname,
   }));
 
-  return { match, roster: rows };
+  const teamRows = await db.select().from(teams).where(eq(teams.matchId, matchId));
+  const teamPlayerRows =
+    teamRows.length > 0
+      ? await db
+          .select({ teamId: teamPlayers.teamId, membershipId: teamPlayers.membershipId })
+          .from(teamPlayers)
+          .where(
+            inArray(
+              teamPlayers.teamId,
+              teamRows.map((t) => t.id),
+            ),
+          )
+      : [];
+  const teamsWithPlayers: TeamWithPlayers[] = teamRows.map((t) => ({
+    team: t,
+    playerMembershipIds: teamPlayerRows
+      .filter((tp) => tp.teamId === t.id)
+      .map((tp) => tp.membershipId),
+  }));
+
+  const eventRows = await db
+    .select({
+      id: matchEvents.id,
+      matchId: matchEvents.matchId,
+      teamId: matchEvents.teamId,
+      membershipId: matchEvents.membershipId,
+      type: matchEvents.type,
+      minute: matchEvents.minute,
+      notes: matchEvents.notes,
+      createdAt: matchEvents.createdAt,
+      nickname: memberships.nickname,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(matchEvents)
+    .innerJoin(memberships, eq(memberships.id, matchEvents.membershipId))
+    .innerJoin(users, eq(users.id, memberships.userId))
+    .where(eq(matchEvents.matchId, matchId))
+    .orderBy(asc(matchEvents.createdAt));
+
+  const events: MatchEventRow[] = eventRows.map((e) => ({
+    id: e.id,
+    matchId: e.matchId,
+    teamId: e.teamId,
+    membershipId: e.membershipId,
+    type: e.type,
+    minute: e.minute,
+    notes: e.notes,
+    createdAt: e.createdAt,
+    displayName: e.nickname ?? e.userName ?? e.userEmail?.split("@")[0] ?? "Jogador",
+  }));
+
+  return { match, roster: rows, teams: teamsWithPlayers, events };
 }
 
 export async function listRecentMatches(peladaId: string, limit = 5): Promise<Match[]> {
