@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Badge, BallGlyph, ButtonLink, Card, EmptyState, MatchStatusBadge } from "@/components/ui";
+import { auth } from "@/lib/auth";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
 import { getNextUpcomingMatch } from "@/server/queries/matches";
@@ -41,143 +43,212 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
     throw error;
   }
 
+  const session = await auth();
+  const firstName = session?.user?.name?.split(" ")[0] ?? "você";
+
   const { pelada, membership } = ctx;
   const upcoming = await getNextUpcomingMatch(pelada.id);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wider text-zinc-500">Pelada</p>
-          <h1 className="truncate text-3xl font-bold tracking-tight">{pelada.name}</h1>
-          {pelada.description && (
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{pelada.description}</p>
-          )}
+      <div className="flex items-center gap-3">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--color-brand)] text-white shadow-[var(--shadow-brand)]">
+          <BallGlyph size={28} />
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-            {ROLE_LABELS[membership.role] ?? membership.role}
-          </span>
-          <Link
-            href={`/p/${pelada.slug}/perfil`}
-            className="text-xs text-zinc-500 underline-offset-4 hover:underline"
-          >
-            Editar perfil
-          </Link>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+            Olá, {firstName} 👋
+          </p>
+          <h1 className="truncate text-2xl font-extrabold tracking-tight">{pelada.name}</h1>
         </div>
+        <Badge tone={membership.role === "admin" ? "brand" : "neutral"} size="sm">
+          {ROLE_LABELS[membership.role] ?? membership.role}
+        </Badge>
       </div>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-          Quando e onde
-        </h2>
-        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-          <Info label="Dia">{WEEKDAY_LABELS[pelada.weekday] ?? pelada.weekday}</Info>
-          <Info label="Horário">{pelada.startTime}</Info>
-          <Info label="Local">{pelada.location}</Info>
-          <Info label="Capacidade">Até {pelada.maxPlayers} jogadores</Info>
-        </dl>
-        {pelada.address && (
-          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">{pelada.address}</p>
-        )}
-      </section>
+      {pelada.description && (
+        <p className="-mt-2 text-sm text-[color:var(--color-ink-soft)]">{pelada.description}</p>
+      )}
 
-      <UpcomingMatchSection
+      <UpcomingMatchCard
         slug={pelada.slug}
         maxPlayers={pelada.maxPlayers}
         isAdmin={membership.role === "admin"}
         upcoming={upcoming}
+        defaultLocation={pelada.location}
       />
+
+      <section>
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+          Atalhos
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <ShortcutCard href={`/p/${pelada.slug}/partidas`} label="Partidas" emoji="📅" />
+          <ShortcutCard href={`/p/${pelada.slug}/ranking`} label="Ranking" emoji="🏆" />
+          <ShortcutCard href={`/p/${pelada.slug}/perfil`} label="Meu perfil" emoji="👤" />
+          {membership.role === "admin" ? (
+            <ShortcutCard
+              href={`/p/${pelada.slug}/nova-partida`}
+              label="Nova partida"
+              emoji="➕"
+              tone="brand"
+            />
+          ) : (
+            <ShortcutCard href="/peladas" label="Trocar pelada" emoji="🔁" />
+          )}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+          Quando e onde
+        </h2>
+        <Card>
+          <dl className="grid gap-3 p-5 sm:grid-cols-2">
+            <Info label="Dia">{WEEKDAY_LABELS[pelada.weekday] ?? pelada.weekday}</Info>
+            <Info label="Horário">{pelada.startTime}</Info>
+            <Info label="Local">{pelada.location}</Info>
+            <Info label="Capacidade">{pelada.maxPlayers} jogadores</Info>
+          </dl>
+          {pelada.address && (
+            <p className="border-t border-[color:var(--color-border)] px-5 py-3 text-xs text-[color:var(--color-ink-soft)]">
+              📍 {pelada.address}
+            </p>
+          )}
+        </Card>
+      </section>
 
       {membership.role === "admin" && (
         <InvitePanel slug={pelada.slug} inviteToken={pelada.inviteToken} />
       )}
-
-      <nav className="flex flex-wrap gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-        <Link
-          href={`/p/${pelada.slug}/ranking`}
-          className="text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
-        >
-          🏆 Ranking de artilharia
-        </Link>
-      </nav>
     </div>
   );
 }
 
-function UpcomingMatchSection({
+function ShortcutCard({
+  href,
+  label,
+  emoji,
+  tone = "default",
+}: {
+  href: string;
+  label: string;
+  emoji: string;
+  tone?: "default" | "brand";
+}) {
+  return (
+    <Link
+      href={href}
+      className={`group flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-all hover:shadow-[var(--shadow-md)] ${
+        tone === "brand"
+          ? "border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand-ink)]"
+          : "border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-ink)]"
+      }`}
+    >
+      <span className="text-2xl">{emoji}</span>
+      <span className="text-xs font-bold">{label}</span>
+    </Link>
+  );
+}
+
+function UpcomingMatchCard({
   slug,
   maxPlayers,
   isAdmin,
   upcoming,
+  defaultLocation,
 }: {
   slug: string;
   maxPlayers: number;
   isAdmin: boolean;
   upcoming: Awaited<ReturnType<typeof getNextUpcomingMatch>>;
+  defaultLocation: string;
 }) {
   if (!upcoming) {
     return (
-      <section className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
-        <h2 className="text-lg font-semibold">Nenhuma partida agendada</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          {isAdmin
-            ? "Agenda a próxima e abre a lista de presença pra galera."
-            : "Quando o admin agendar, ela aparece aqui."}
-        </p>
-        {isAdmin && (
-          <Link
-            href={`/p/${slug}/nova-partida`}
-            className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+      <EmptyState
+        icon={
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            Agendar partida
-          </Link>
-        )}
-      </section>
+            <title>Sem partida</title>
+            <rect x="3" y="5" width="18" height="16" rx="2.5" />
+            <path d="M3 10h18M8 3v4M16 3v4" />
+          </svg>
+        }
+        title="Nenhuma partida agendada"
+        description={
+          isAdmin
+            ? "Bora marcar a próxima e abrir a lista pra galera."
+            : "Quando o admin agendar, ela aparece aqui."
+        }
+        action={
+          isAdmin && (
+            <ButtonLink href={`/p/${slug}/nova-partida`} variant="primary" size="md">
+              Agendar partida
+            </ButtonLink>
+          )
+        }
+      />
     );
   }
 
   const { match, confirmedCount, waitlistCount } = upcoming;
+  const dateLabel = MATCH_DATE_FORMATTER.format(match.scheduledFor);
+  const pct = Math.min(100, Math.round((confirmedCount / maxPlayers) * 100));
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+    <section className="overflow-hidden rounded-3xl border border-[color:var(--color-brand)]/30 bg-[color:var(--color-surface-raised)] shadow-[var(--shadow-md)]">
+      <div className="bg-brand-gradient px-5 py-4 text-white">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-white/85">
             Próxima partida
-          </h2>
-          <p className="mt-1 text-lg font-semibold first-letter:capitalize">
-            {MATCH_DATE_FORMATTER.format(match.scheduledFor)}
           </p>
-          {match.locationOverride && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">{match.locationOverride}</p>
-          )}
-          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <span className="font-semibold">{confirmedCount}</span>
-            <span className="text-zinc-500"> / {maxPlayers} confirmados</span>
-            {waitlistCount > 0 && (
-              <span className="text-zinc-500"> · {waitlistCount} na espera</span>
-            )}
-          </p>
+          <MatchStatusBadge status={match.status} />
         </div>
-        <Link
-          href={`/p/${slug}/m/${match.id}`}
-          className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          Abrir
-        </Link>
+        <p className="mt-1 text-2xl font-extrabold leading-tight tracking-tight first-letter:capitalize">
+          {dateLabel}
+        </p>
+        <p className="mt-1 text-sm text-white/85">📍 {match.locationOverride ?? defaultLocation}</p>
       </div>
 
-      {isAdmin && (
-        <div className="mt-4 text-right">
-          <Link
-            href={`/p/${slug}/nova-partida`}
-            className="text-xs text-zinc-500 underline-offset-4 hover:underline"
-          >
-            + Agendar outra partida
-          </Link>
+      <div className="space-y-4 px-5 py-4">
+        <div>
+          <div className="flex items-baseline justify-between">
+            <div className="space-x-1">
+              <span className="text-2xl font-extrabold tabular-nums text-[color:var(--color-ink)]">
+                {confirmedCount}
+              </span>
+              <span className="text-sm text-[color:var(--color-ink-muted)]">
+                / {maxPlayers} confirmados
+              </span>
+            </div>
+            {waitlistCount > 0 && (
+              <Badge tone="warning" size="sm">
+                +{waitlistCount} na espera
+              </Badge>
+            )}
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[color:var(--color-surface-muted)]">
+            <div
+              className="h-full rounded-full bg-[color:var(--color-brand)] transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         </div>
-      )}
+
+        <ButtonLink href={`/p/${slug}/m/${match.id}`} variant="primary" size="lg" fullWidth>
+          Abrir partida →
+        </ButtonLink>
+      </div>
     </section>
   );
 }
@@ -194,8 +265,10 @@ const MATCH_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wider text-zinc-500">{label}</dt>
-      <dd className="mt-0.5 text-base font-medium">{children}</dd>
+      <dt className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-base font-bold text-[color:var(--color-ink)]">{children}</dd>
     </div>
   );
 }

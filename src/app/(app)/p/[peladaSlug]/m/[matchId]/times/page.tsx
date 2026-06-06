@@ -39,12 +39,12 @@ export default async function DraftTeamsPage({ params }: { params: Params }) {
       <div className="space-y-4">
         <Link
           href={`/p/${peladaSlug}/m/${matchId}`}
-          className="text-sm text-zinc-500 underline-offset-4 hover:underline"
+          className="text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
         >
           ← Voltar pra partida
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Sortear times</h1>
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <h1 className="text-3xl font-extrabold tracking-tight">Sortear times</h1>
+        <p className="rounded-xl border border-[color:var(--color-warning)]/30 bg-[color:var(--color-warning-soft)] px-4 py-3 text-sm font-medium text-[color:var(--color-warning)]">
           Precisa de pelo menos 2 jogadores confirmados pra sortear.
         </p>
       </div>
@@ -73,15 +73,18 @@ export default async function DraftTeamsPage({ params }: { params: Params }) {
     <div className="space-y-6">
       <Link
         href={`/p/${peladaSlug}/m/${matchId}`}
-        className="text-sm text-zinc-500 underline-offset-4 hover:underline"
+        className="text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
       >
         ← Voltar pra partida
       </Link>
 
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Sortear times</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {confirmed.length} jogadores confirmados. Toque em cada nome pra mandar pra um time.
+      <header>
+        <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-brand)]">
+          Sortear times
+        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight">{confirmed.length} jogadores</h1>
+        <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+          Toque em cada nome pra mandar pra um time.
         </p>
       </header>
 

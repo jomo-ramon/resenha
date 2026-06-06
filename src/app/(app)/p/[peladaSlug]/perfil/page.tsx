@@ -24,17 +24,21 @@ export default async function PerfilPage({ params }: { params: Params }) {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <Link
-          href={`/p/${peladaSlug}`}
-          className="text-sm text-zinc-500 underline-offset-4 hover:underline"
-        >
-          ← Voltar pra pelada
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Meu perfil em {ctx.pelada.name}</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Seu apelido é o que vai aparecer pra galera nos times e no ranking.
+    <div className="mx-auto max-w-xl space-y-6">
+      <Link
+        href={`/p/${peladaSlug}`}
+        className="text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
+      >
+        ← Voltar pra pelada
+      </Link>
+
+      <header>
+        <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+          Em {ctx.pelada.name}
+        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight">Meu perfil</h1>
+        <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+          Seu apelido aparece pra galera nos times e no ranking.
         </p>
       </header>
 

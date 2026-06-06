@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import {
+  Badge,
+  ButtonLink,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  MatchStatusBadge,
+} from "@/components/ui";
 import { canCancelMatch, isRosterAcceptingResponses } from "@/lib/domain/match";
 import { TEAM_DARK, TEAM_LIGHT } from "@/lib/domain/team-draft";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
@@ -15,28 +24,14 @@ import { MatchEventsTimeline, TeamsBoard } from "./teams-board";
 
 type Params = Promise<{ peladaSlug: string; matchId: string }>;
 
-const STATUS_LABELS: Record<string, string> = {
-  scheduled: "Agendada",
-  roster_open: "Lista aberta",
-  teams_drafted: "Times sorteados",
-  in_progress: "Em andamento",
-  finished: "Finalizada",
-  cancelled: "Cancelada",
-};
-
-const STATUS_TONES: Record<string, string> = {
-  roster_open: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  scheduled: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  teams_drafted: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300",
-  in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  finished: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-  cancelled: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
-};
-
 const DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
   weekday: "long",
   day: "2-digit",
   month: "long",
+  timeZone: "America/Sao_Paulo",
+});
+
+const TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
   hour: "2-digit",
   minute: "2-digit",
   timeZone: "America/Sao_Paulo",
@@ -91,72 +86,68 @@ export default async function MatchPage({ params }: { params: Params }) {
   const showRosterPanels = match.status === "roster_open";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <Link
-        href={`/p/${peladaSlug}`}
-        className="inline-block text-sm text-zinc-500 underline-offset-4 hover:underline"
+        href={`/p/${peladaSlug}/partidas`}
+        className="inline-block text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
       >
-        ← Voltar pra pelada
+        ← Partidas
       </Link>
 
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-wider text-zinc-500">Partida</p>
-          <h1 className="text-3xl font-bold tracking-tight first-letter:capitalize">
+        <div className="min-w-0">
+          <MatchStatusBadge status={match.status} />
+          <h1 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight first-letter:capitalize">
             {DATE_FORMATTER.format(match.scheduledFor)}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            {match.locationOverride ?? ctx.pelada.location}
+          <p className="mt-0.5 text-2xl font-extrabold tabular-nums text-[color:var(--color-ink-soft)]">
+            {TIME_FORMATTER.format(match.scheduledFor)}
+          </p>
+          <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+            📍 {match.locationOverride ?? ctx.pelada.location}
           </p>
         </div>
-        <span
-          className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
-            STATUS_TONES[match.status] ?? "bg-zinc-100 text-zinc-700"
-          }`}
-        >
-          {STATUS_LABELS[match.status] ?? match.status}
-        </span>
       </header>
 
       {match.notes && (
-        <p className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-          {match.notes}
+        <p className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-ink-soft)]">
+          💬 {match.notes}
         </p>
       )}
 
       {rosterOpen && (
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-              Sua presença
-            </h2>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <Card tone={myEntry?.status === "confirmed" ? "brand" : "default"}>
+          <CardBody>
+            <CardTitle>Sua presença</CardTitle>
+            <p className="mt-1 text-sm text-[color:var(--color-ink)]">
               {myEntry?.status === "confirmed"
-                ? "Você tá confirmado pra essa partida."
+                ? "✓ Você tá confirmado pra essa partida."
                 : myEntry?.status === "waitlist"
                   ? `Você está na lista de espera (posição ${waitlist.findIndex((w) => w.membershipId === ctx.membership.id) + 1}).`
                   : myEntry?.status === "declined"
                     ? "Você desistiu. Pode confirmar de novo se mudar de ideia."
                     : "Você ainda não respondeu."}
             </p>
-          </div>
-          <div className="mt-4">
-            <AttendanceButtons
-              slug={peladaSlug}
-              matchId={matchId}
-              currentStatus={myEntry?.status ?? null}
-            />
-          </div>
-        </section>
+            <div className="mt-4">
+              <AttendanceButtons
+                slug={peladaSlug}
+                matchId={matchId}
+                currentStatus={myEntry?.status ?? null}
+              />
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {match.status === "roster_open" && isAdmin && confirmed.length >= 2 && (
-        <Link
+        <ButtonLink
           href={`/p/${peladaSlug}/m/${matchId}/times`}
-          className="flex h-12 items-center justify-center rounded-full bg-zinc-900 px-5 text-base font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          variant="primary"
+          size="xl"
+          fullWidth
         >
-          Sortear times
-        </Link>
+          Sortear times →
+        </ButtonLink>
       )}
 
       {showTeams && lightTeam && darkTeam && (
@@ -211,7 +202,7 @@ export default async function MatchPage({ params }: { params: Params }) {
 
       {showRosterPanels && (
         <RosterSection
-          title={`Confirmados (${confirmed.length}/${ctx.pelada.maxPlayers})`}
+          title={`Confirmados ${confirmed.length}/${ctx.pelada.maxPlayers}`}
           emptyLabel="Ninguém confirmou ainda."
           rows={confirmed}
           highlightMembershipId={ctx.membership.id}
@@ -239,17 +230,17 @@ export default async function MatchPage({ params }: { params: Params }) {
       )}
 
       {cancellable && (
-        <section className="rounded-xl border border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/40">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-red-700 dark:text-red-300">
-            Zona perigosa
-          </h2>
-          <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-            Cancelar partida apaga tudo. Antes do sorteio dos times.
-          </p>
-          <div className="mt-3">
+        <Card tone="danger" className="border-[color:var(--color-danger)]/30">
+          <CardHeader className="border-[color:var(--color-danger)]/20">
+            <CardTitle className="text-[color:var(--color-danger)]">Zona perigosa</CardTitle>
+          </CardHeader>
+          <CardBody className="space-y-3">
+            <p className="text-sm text-[color:var(--color-danger)]">
+              Cancelar partida apaga tudo. Antes do sorteio dos times.
+            </p>
             <CancelMatchButton slug={peladaSlug} matchId={matchId} />
-          </div>
-        </section>
+          </CardBody>
+        </Card>
       )}
     </div>
   );
@@ -272,26 +263,35 @@ function RosterSection({
 }) {
   return (
     <section>
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-zinc-500">{title}</h2>
+      <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+        {title}
+      </h2>
       {rows.length === 0 ? (
-        <p className="text-sm text-zinc-500">{emptyLabel}</p>
+        <p className="text-sm text-[color:var(--color-ink-muted)]">{emptyLabel}</p>
       ) : (
-        <ol className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        <ol className="overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]">
           {rows.map((r, idx) => {
             const isMe = r.membershipId === highlightMembershipId;
             return (
               <li
                 key={r.entryId}
-                className={`flex items-center justify-between gap-3 bg-white px-4 py-3 dark:bg-zinc-950 ${
-                  muted ? "text-zinc-500 dark:text-zinc-500" : ""
+                className={`flex items-center justify-between gap-3 border-b border-[color:var(--color-border)] px-4 py-3 last:border-0 ${
+                  muted ? "text-[color:var(--color-ink-muted)]" : ""
                 }`}
               >
                 <span className="flex items-center gap-2">
                   {showPosition && (
-                    <span className="font-mono text-xs text-zinc-500">{idx + 1}.</span>
+                    <span className="w-5 text-right font-mono text-xs text-[color:var(--color-ink-muted)]">
+                      {idx + 1}.
+                    </span>
                   )}
-                  <span className={isMe ? "font-semibold" : ""}>
-                    {r.displayName} {isMe && <span className="text-xs text-zinc-500">(você)</span>}
+                  <span className={isMe ? "font-bold" : "font-medium"}>
+                    {r.displayName}
+                    {isMe && (
+                      <Badge tone="brand" size="xs" className="ml-2">
+                        Você
+                      </Badge>
+                    )}
                   </span>
                 </span>
               </li>

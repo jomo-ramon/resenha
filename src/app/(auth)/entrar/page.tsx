@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
+import { Button, Field, inputClass, Logo } from "@/components/ui";
 import { auth, signIn } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -16,11 +18,6 @@ const errorMessages: Record<string, string> = {
   Default: "Algo deu errado no login. Tenta de novo.",
 };
 
-/**
- * Only allow same-origin relative paths as post-login redirects.
- * Rejects absolute URLs and protocol-relative (`//evil.com`) to prevent
- * open-redirect via the callbackUrl query param.
- */
 function safeCallbackPath(raw: string | undefined): string {
   if (!raw) return "/peladas";
   if (!raw.startsWith("/")) return "/peladas";
@@ -34,9 +31,7 @@ export default async function EntrarPage({ searchParams }: { searchParams: Searc
 
   const target = safeCallbackPath(callbackUrl);
 
-  if (session?.user) {
-    redirect(target);
-  }
+  if (session?.user) redirect(target);
 
   const errorMessage = error ? (errorMessages[error] ?? errorMessages.Default) : null;
 
@@ -59,71 +54,83 @@ export default async function EntrarPage({ searchParams }: { searchParams: Searc
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm space-y-8">
-        <header className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">resenha</h1>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            A plataforma da sua pelada. Entra e bora!
-          </p>
-        </header>
-
-        {errorMessage && (
-          <div
-            role="alert"
-            className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+    <div className="flex min-h-full flex-col">
+      <header className="border-b border-[color:var(--color-border)]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
+          <Link href="/" className="inline-flex">
+            <Logo size="md" className="text-[color:var(--color-brand)]" />
+          </Link>
+          <Link
+            href="/"
+            className="text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
           >
-            {errorMessage}
-          </div>
-        )}
-
-        <form action={signInWithGoogle}>
-          <button
-            type="submit"
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-zinc-300 bg-white px-5 text-base font-medium text-zinc-900 transition-colors hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800"
-          >
-            <GoogleIcon />
-            Entrar com Google
-          </button>
-        </form>
-
-        <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-          <span className="text-xs uppercase tracking-wider text-zinc-500">ou</span>
-          <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+            ← Voltar
+          </Link>
         </div>
+      </header>
 
-        <form action={signInWithResend} className="space-y-3">
-          <input type="hidden" name="redirectTo" value={target} />
-          <div className="space-y-1.5">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Seu e-mail
-            </label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              required
-              placeholder="voce@exemplo.com"
-              autoComplete="email"
-              className="block h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-900 placeholder-zinc-400 focus-visible:border-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus-visible:border-zinc-50 dark:focus-visible:ring-zinc-50"
-            />
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight">Entra na resenha</h1>
+            <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+              Login rápido com Google ou link mágico no e-mail.
+            </p>
           </div>
-          <button
-            type="submit"
-            className="flex h-12 w-full items-center justify-center rounded-full bg-zinc-900 px-5 text-base font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            Receber link de acesso
-          </button>
-          <p className="text-xs text-zinc-500 dark:text-zinc-500">
-            A gente manda um link mágico no teu e-mail. Sem senha.
-          </p>
-        </form>
-      </div>
-    </main>
+
+          {errorMessage && (
+            <div
+              role="alert"
+              className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger-soft)] px-4 py-3 text-sm font-medium text-[color:var(--color-danger)]"
+            >
+              {errorMessage}
+            </div>
+          )}
+
+          <form action={signInWithGoogle}>
+            <Button
+              type="submit"
+              variant="outline"
+              size="xl"
+              fullWidth
+              leadingIcon={<GoogleIcon />}
+            >
+              Continuar com Google
+            </Button>
+          </form>
+
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-[color:var(--color-border)]" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+              ou
+            </span>
+            <span className="h-px flex-1 bg-[color:var(--color-border)]" />
+          </div>
+
+          <form action={signInWithResend} className="space-y-4">
+            <input type="hidden" name="redirectTo" value={target} />
+            <Field
+              label="Seu e-mail"
+              htmlFor="email"
+              hint="A gente manda um link mágico, sem senha."
+            >
+              <input
+                id="email"
+                type="email"
+                name="email"
+                required
+                placeholder="voce@exemplo.com"
+                autoComplete="email"
+                className={inputClass}
+              />
+            </Field>
+            <Button type="submit" variant="primary" size="xl" fullWidth>
+              Receber link no e-mail
+            </Button>
+          </form>
+        </div>
+      </main>
+    </div>
   );
 }
 

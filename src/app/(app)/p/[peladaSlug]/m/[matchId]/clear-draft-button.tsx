@@ -13,7 +13,7 @@ export function ClearDraftButton({ slug, matchId }: { slug: string; matchId: str
     <form action={formAction}>
       <SubmitButton />
       {state.status === "error" && state.message && (
-        <p className="mt-1 text-xs text-red-600">{state.message}</p>
+        <p className="mt-1 text-xs font-medium text-[color:var(--color-danger)]">{state.message}</p>
       )}
     </form>
   );
@@ -25,9 +25,9 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="text-xs text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400 disabled:opacity-50"
+      className="text-xs text-[color:var(--color-ink-muted)] underline-offset-4 hover:text-[color:var(--color-ink)] hover:underline disabled:opacity-50"
     >
-      {pending ? "Desfazendo..." : "Refazer sorteio"}
+      {pending ? "Desfazendo..." : "↺ Refazer sorteio"}
     </button>
   );
 }

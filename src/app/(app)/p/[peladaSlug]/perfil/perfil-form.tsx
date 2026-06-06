@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { Button, Field, inputClass } from "@/components/ui";
 import type { PreferredPosition } from "@/lib/db/schema";
 import { PREFERRED_POSITION_LABELS } from "@/lib/domain/membership";
 import {
@@ -28,12 +29,12 @@ export function PerfilForm({
   return (
     <form action={formAction} className="space-y-5">
       {state.status === "success" && state.message && (
-        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
+        <p className="rounded-xl border border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand-soft)] px-4 py-3 text-sm font-medium text-[color:var(--color-brand-ink)]">
           {state.message}
         </p>
       )}
       {state.status === "error" && state.message && (
-        <p className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger-soft)] px-4 py-3 text-sm font-medium text-[color:var(--color-danger)]">
           {state.message}
         </p>
       )}
@@ -41,7 +42,7 @@ export function PerfilForm({
       <Field
         label="Apelido"
         htmlFor="nickname"
-        hint="Como a galera te chama."
+        hint="Como a galera te chama. Aparece nos times e no ranking."
         error={state.fieldErrors?.nickname}
       >
         <input
@@ -101,46 +102,8 @@ export function PerfilForm({
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex h-12 w-full items-center justify-center rounded-full bg-zinc-900 px-5 text-base font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-    >
-      {pending ? "Salvando..." : "Salvar"}
-    </button>
+    <Button type="submit" variant="primary" size="xl" fullWidth disabled={pending}>
+      {pending ? "Salvando..." : "Salvar perfil"}
+    </Button>
   );
 }
-
-function Field({
-  label,
-  htmlFor,
-  hint,
-  error,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  hint?: string | undefined;
-  error?: string | undefined;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={htmlFor}
-        className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-      >
-        {label}
-      </label>
-      {children}
-      {error ? (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-zinc-500 dark:text-zinc-500">{hint}</p>
-      ) : null}
-    </div>
-  );
-}
-
-const inputClass =
-  "block h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-900 placeholder-zinc-400 focus-visible:border-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus-visible:border-zinc-50 dark:focus-visible:ring-zinc-50";

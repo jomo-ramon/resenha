@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { Button, Field, inputClass } from "@/components/ui";
 import { suggestSlugFromName } from "@/lib/domain/pelada";
 import { type CreatePeladaState, createPeladaAction } from "@/server/actions/pelada/create-pelada";
 
@@ -24,9 +25,7 @@ export function NovaPeladaForm() {
   const [slugTouched, setSlugTouched] = useState(false);
 
   useEffect(() => {
-    if (!slugTouched) {
-      setSlug(suggestSlugFromName(name));
-    }
+    if (!slugTouched) setSlug(suggestSlugFromName(name));
   }, [name, slugTouched]);
 
   return (
@@ -34,13 +33,13 @@ export function NovaPeladaForm() {
       {state.status === "error" && state.message && (
         <div
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger-soft)] px-4 py-3 text-sm font-medium text-[color:var(--color-danger)]"
         >
           {state.message}
         </div>
       )}
 
-      <Field label="Nome da pelada" htmlFor="name" error={state.fieldErrors?.name}>
+      <Field label="Nome da pelada" htmlFor="name" required error={state.fieldErrors?.name}>
         <input
           id="name"
           name="name"
@@ -54,13 +53,14 @@ export function NovaPeladaForm() {
       </Field>
 
       <Field
-        label="Endereço (URL)"
+        label="Endereço (link)"
         htmlFor="slug"
+        required
         hint="Vai virar resenha.app/p/seu-endereco"
         error={state.fieldErrors?.slug}
       >
         <div className="flex items-stretch">
-          <span className="inline-flex select-none items-center rounded-l-md border border-r-0 border-zinc-300 bg-zinc-100 px-3 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+          <span className="inline-flex select-none items-center rounded-l-xl border border-r-0 border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] px-3 text-sm text-[color:var(--color-ink-muted)]">
             /p/
           </span>
           <input
@@ -80,7 +80,7 @@ export function NovaPeladaForm() {
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Dia da semana" htmlFor="weekday" error={state.fieldErrors?.weekday}>
+        <Field label="Dia da semana" htmlFor="weekday" required error={state.fieldErrors?.weekday}>
           <select
             id="weekday"
             name="weekday"
@@ -96,7 +96,7 @@ export function NovaPeladaForm() {
           </select>
         </Field>
 
-        <Field label="Horário" htmlFor="startTime" error={state.fieldErrors?.startTime}>
+        <Field label="Horário" htmlFor="startTime" required error={state.fieldErrors?.startTime}>
           <input
             id="startTime"
             name="startTime"
@@ -108,7 +108,7 @@ export function NovaPeladaForm() {
         </Field>
       </div>
 
-      <Field label="Local" htmlFor="location" error={state.fieldErrors?.location}>
+      <Field label="Local" htmlFor="location" required error={state.fieldErrors?.location}>
         <input
           id="location"
           name="location"
@@ -137,6 +137,7 @@ export function NovaPeladaForm() {
       <Field
         label="Máximo de jogadores"
         htmlFor="maxPlayers"
+        required
         hint="Quem chegar depois entra na lista de espera."
         error={state.fieldErrors?.maxPlayers}
       >
@@ -177,46 +178,8 @@ export function NovaPeladaForm() {
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex h-12 w-full items-center justify-center rounded-full bg-zinc-900 px-5 text-base font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-    >
+    <Button type="submit" variant="primary" size="xl" fullWidth disabled={pending}>
       {pending ? "Criando..." : "Criar pelada"}
-    </button>
+    </Button>
   );
 }
-
-function Field({
-  label,
-  htmlFor,
-  hint,
-  error,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  hint?: string | undefined;
-  error?: string | undefined;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label
-        htmlFor={htmlFor}
-        className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-      >
-        {label}
-      </label>
-      {children}
-      {error ? (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-zinc-500 dark:text-zinc-500">{hint}</p>
-      ) : null}
-    </div>
-  );
-}
-
-const inputClass =
-  "block h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-900 placeholder-zinc-400 focus-visible:border-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus-visible:border-zinc-50 dark:focus-visible:ring-zinc-50";

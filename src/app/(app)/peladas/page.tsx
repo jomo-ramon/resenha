@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Badge, BallGlyph, ButtonLink, Card } from "@/components/ui";
 import { listPeladasOfCurrentUser } from "@/server/queries/peladas";
 
 export const metadata: Metadata = {
@@ -26,47 +27,55 @@ const ROLE_LABELS: Record<string, string> = {
 export default async function PeladasPage() {
   const peladas = await listPeladasOfCurrentUser();
 
-  if (peladas.length === 0) {
-    redirect("/nova-pelada");
-  }
+  if (peladas.length === 0) redirect("/nova-pelada");
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Minhas peladas</h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            {peladas.length === 1
-              ? "Você participa de 1 pelada."
-              : `Você participa de ${peladas.length} peladas.`}
+          <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+            {peladas.length === 1 ? "1 pelada" : `${peladas.length} peladas`}
           </p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Suas peladas</h1>
         </div>
-        <Link
+        <ButtonLink
           href="/nova-pelada"
-          className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          variant="primary"
+          size="md"
+          leadingIcon={<span aria-hidden="true">+</span>}
         >
-          + Nova pelada
-        </Link>
-      </div>
+          Nova pelada
+        </ButtonLink>
+      </header>
 
-      <ul className="space-y-3">
+      <ul className="grid gap-3 sm:grid-cols-2">
         {peladas.map((p) => (
           <li key={p.id}>
-            <Link
-              href={`/p/${p.slug}`}
-              className="block rounded-xl border border-zinc-200 bg-white p-5 transition-colors hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="truncate text-lg font-semibold">{p.name}</h2>
-                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                    {WEEKDAY_LABELS[p.weekday] ?? p.weekday} às {p.startTime} · {p.location}
-                  </p>
+            <Link href={`/p/${p.slug}`} className="group block h-full focus-visible:outline-none">
+              <Card
+                elevation="raised"
+                className="h-full transition-shadow group-hover:shadow-[var(--shadow-md)]"
+              >
+                <div className="flex items-start gap-3 p-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--color-brand)] text-white shadow-[var(--shadow-brand)]">
+                    <BallGlyph size={24} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="truncate text-lg font-extrabold tracking-tight">{p.name}</h2>
+                      <Badge tone={p.role === "admin" ? "brand" : "neutral"} size="xs">
+                        {ROLE_LABELS[p.role] ?? p.role}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+                      {WEEKDAY_LABELS[p.weekday] ?? p.weekday} · {p.startTime}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[color:var(--color-ink-muted)]">
+                      📍 {p.location}
+                    </p>
+                  </div>
                 </div>
-                <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                  {ROLE_LABELS[p.role] ?? p.role}
-                </span>
-              </div>
+              </Card>
             </Link>
           </li>
         ))}

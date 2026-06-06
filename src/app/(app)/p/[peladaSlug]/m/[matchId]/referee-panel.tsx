@@ -2,11 +2,12 @@
 
 /**
  * Referee panel — record goals/cards live during in_progress.
- * Renders two big "+ Gol" buttons (one per team) that open a player picker.
+ * Renders two huge "+ Gol" buttons (one per team) that open a player picker.
  */
 
 import { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui";
 import type { MatchEventType } from "@/lib/db/schema";
 import { MATCH_EVENT_LABELS } from "@/lib/domain/match-event";
 import { type AddEventState, addMatchEventAction } from "@/server/actions/match/add-event";
@@ -50,42 +51,32 @@ export function RefereePanel({
   return (
     <section className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <ScoreButton
-          tone="light"
-          label={lightTeam.name}
-          onClick={() => setPicker({ team: lightTeam, type: "goal" })}
-        >
-          + Gol Claro
-        </ScoreButton>
-        <ScoreButton
-          tone="dark"
-          label={darkTeam.name}
-          onClick={() => setPicker({ team: darkTeam, type: "goal" })}
-        >
-          + Gol Escuro
-        </ScoreButton>
+        <BigGoalButton tone="light" onClick={() => setPicker({ team: lightTeam, type: "goal" })} />
+        <BigGoalButton tone="dark" onClick={() => setPicker({ team: darkTeam, type: "goal" })} />
       </div>
 
-      <details className="rounded-md border border-zinc-200 dark:border-zinc-800">
-        <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium">
-          Outros eventos (assistência, cartões)
+      <details className="overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+          Outros eventos (assistência, cartões, gol contra)
         </summary>
-        <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+        <div className="grid grid-cols-2 gap-2 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
           {(["assist", "yellow_card", "red_card", "own_goal"] as MatchEventType[]).map((t) => (
-            <div key={t} className="flex flex-col gap-1">
-              <p className="text-xs text-zinc-500">{MATCH_EVENT_LABELS[t]}</p>
+            <div key={t} className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+                {MATCH_EVENT_LABELS[t]}
+              </p>
               <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={() => setPicker({ team: lightTeam, type: t })}
-                  className="flex-1 rounded-md border border-zinc-300 px-2 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                  className="flex-1 rounded-lg border border-[color:var(--color-border-strong)] bg-[color:var(--color-team-light)] px-2 py-1.5 text-xs font-semibold text-[color:var(--color-team-light-ink)] hover:opacity-90"
                 >
                   Claro
                 </button>
                 <button
                   type="button"
                   onClick={() => setPicker({ team: darkTeam, type: t })}
-                  className="flex-1 rounded-md bg-zinc-900 px-2 py-1.5 text-xs text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  className="flex-1 rounded-lg bg-[color:var(--color-team-dark)] px-2 py-1.5 text-xs font-semibold text-[color:var(--color-team-dark-ink)] hover:opacity-90"
                 >
                   Escuro
                 </button>
@@ -112,29 +103,19 @@ export function RefereePanel({
   );
 }
 
-function ScoreButton({
-  tone,
-  label,
-  onClick,
-  children,
-}: {
-  tone: "light" | "dark";
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  const cls =
-    tone === "light"
-      ? "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
-      : "bg-zinc-900 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200";
+function BigGoalButton({ tone, onClick }: { tone: "light" | "dark"; onClick: () => void }) {
+  const isLight = tone === "light";
+  const cls = isLight
+    ? "bg-[color:var(--color-team-light)] text-[color:var(--color-team-light-ink)] border-[color:var(--color-border-strong)]"
+    : "bg-[color:var(--color-team-dark)] text-[color:var(--color-team-dark-ink)] border-transparent";
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Marcar gol pro ${label}`}
-      className={`flex h-16 items-center justify-center rounded-xl text-base font-bold ${cls}`}
+      className={`flex h-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 text-lg font-extrabold uppercase tracking-wider shadow-[var(--shadow-md)] active:scale-95 transition-transform ${cls}`}
     >
-      {children}
+      <span className="text-3xl">⚽</span>
+      <span>+ Gol {isLight ? "Claro" : "Escuro"}</span>
     </button>
   );
 }
@@ -184,22 +165,23 @@ function PlayerPicker({
       aria-modal="true"
       aria-labelledby="player-picker-title"
     >
-      <div className="w-full max-w-md space-y-3 rounded-xl bg-white p-4 shadow-2xl dark:bg-zinc-900">
+      <div className="w-full max-w-md space-y-3 rounded-2xl bg-[color:var(--color-surface-raised)] p-4 shadow-[var(--shadow-lg)]">
         <header className="flex items-center justify-between">
-          <h3 id="player-picker-title" className="text-base font-semibold">
+          <h3 id="player-picker-title" className="text-base font-bold">
             {MATCH_EVENT_LABELS[type]} — {team.name}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="text-sm text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink)]"
+            aria-label="Fechar"
           >
             ✕
           </button>
         </header>
 
         <label className="flex items-center gap-2 text-sm">
-          <span className="text-zinc-600 dark:text-zinc-400">Minuto:</span>
+          <span className="text-[color:var(--color-ink-soft)]">Minuto:</span>
           <input
             type="number"
             inputMode="numeric"
@@ -208,7 +190,7 @@ function PlayerPicker({
             value={minute}
             onChange={(e) => setMinute(e.target.value)}
             placeholder="opcional"
-            className="h-9 w-24 rounded-md border border-zinc-300 px-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="h-9 w-24 rounded-lg border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface)] px-2 text-sm"
           />
         </label>
 
@@ -219,10 +201,10 @@ function PlayerPicker({
                 type="button"
                 disabled={isPending && selected === p.membershipId}
                 onClick={() => submit(p.membershipId)}
-                className="flex w-full items-center justify-between rounded-md border border-zinc-200 px-3 py-2.5 text-left text-sm hover:border-zinc-400 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:bg-zinc-800"
+                className="flex w-full items-center justify-between rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 py-3 text-left text-sm font-medium hover:border-[color:var(--color-brand)] hover:bg-[color:var(--color-brand-soft)] disabled:opacity-50"
               >
                 <span>{p.displayName}</span>
-                <span className="text-xs text-zinc-500">
+                <span className="text-[color:var(--color-ink-muted)]">
                   {isPending && selected === p.membershipId ? "..." : "→"}
                 </span>
               </button>
@@ -231,7 +213,7 @@ function PlayerPicker({
         </ul>
 
         {state.status === "error" && state.message && (
-          <p className="text-xs text-red-600 dark:text-red-400">{state.message}</p>
+          <p className="text-xs font-medium text-[color:var(--color-danger)]">{state.message}</p>
         )}
       </div>
     </div>
@@ -251,7 +233,7 @@ function EventsEditableList({
 
   return (
     <section>
-      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+      <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
         Eventos ({events.length})
       </h3>
       <ul className="space-y-1.5">
@@ -275,19 +257,19 @@ function EventLine({
   const bound = removeMatchEventAction.bind(null, slug, matchId, event.id);
   const [state, formAction] = useActionState(bound, removeInitial);
   return (
-    <li className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <span className="font-mono text-xs text-zinc-500 w-8 text-right">
+    <li className="flex items-center gap-3 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-3 py-2 text-sm">
+      <span className="w-8 shrink-0 text-right font-mono text-xs text-[color:var(--color-ink-muted)]">
         {event.minute !== null ? `${event.minute}'` : "—"}
       </span>
       <span className="flex-1 truncate">
-        <span className="font-medium">{MATCH_EVENT_LABELS[event.type]}</span>
-        <span className="text-zinc-500"> · {event.displayName}</span>
+        <span className="font-semibold">{MATCH_EVENT_LABELS[event.type]}</span>
+        <span className="text-[color:var(--color-ink-muted)]"> · {event.displayName}</span>
       </span>
       <form action={formAction}>
         <RemoveButton />
       </form>
       {state.status === "error" && state.message && (
-        <span className="text-xs text-red-600">{state.message}</span>
+        <span className="text-xs text-[color:var(--color-danger)]">{state.message}</span>
       )}
     </li>
   );
@@ -299,7 +281,7 @@ function RemoveButton() {
     <button
       type="submit"
       disabled={pending}
-      className="text-xs text-zinc-500 underline-offset-4 hover:text-red-700 hover:underline disabled:opacity-50"
+      className="text-xs text-[color:var(--color-ink-muted)] underline-offset-4 hover:text-[color:var(--color-danger)] hover:underline disabled:opacity-50"
     >
       {pending ? "..." : "remover"}
     </button>
@@ -321,38 +303,40 @@ function FinishMatchForm({
 
   if (!confirming) {
     return (
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="lg"
+        fullWidth
         onClick={() => setConfirming(true)}
-        className="flex h-12 w-full items-center justify-center rounded-full border border-zinc-300 px-5 text-base font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
       >
         Encerrar partida
-      </button>
+      </Button>
     );
   }
 
   return (
     <form
       action={formAction}
-      className="rounded-xl border border-zinc-300 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900"
+      className="rounded-2xl border border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-muted)] p-4"
     >
       <p className="text-sm">
         {hasEvents
           ? "Encerrar fecha o placar e libera o ranking. Você pode editar eventos depois."
-          : "Sem nenhum evento registrado, o placar vai ser 0x0. Tem certeza?"}
+          : "Sem nenhum evento registrado, o placar vai ser 0×0. Tem certeza?"}
       </p>
       <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+          className="text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
         >
           Cancelar
         </button>
         <FinishSubmit />
       </div>
       {state.status === "error" && state.message && (
-        <p className="mt-2 text-xs text-red-600">{state.message}</p>
+        <p className="mt-2 text-xs font-medium text-[color:var(--color-danger)]">{state.message}</p>
       )}
     </form>
   );
@@ -361,12 +345,8 @@ function FinishMatchForm({
 function FinishSubmit() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-    >
+    <Button type="submit" variant="secondary" size="md" disabled={pending}>
       {pending ? "Encerrando..." : "Sim, encerrar"}
-    </button>
+    </Button>
   );
 }

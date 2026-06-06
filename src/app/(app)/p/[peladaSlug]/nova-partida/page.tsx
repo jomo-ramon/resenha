@@ -24,17 +24,21 @@ export default async function NovaPartidaPage({ params }: { params: Params }) {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <Link
-          href={`/p/${peladaSlug}`}
-          className="text-sm text-zinc-500 underline-offset-4 hover:underline"
-        >
-          ← Voltar pra pelada
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Nova partida</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          A lista de presença abre automaticamente. Você pode confirmar a galera depois.
+    <div className="mx-auto max-w-xl space-y-6">
+      <Link
+        href={`/p/${peladaSlug}/partidas`}
+        className="text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
+      >
+        ← Voltar pras partidas
+      </Link>
+
+      <header>
+        <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-brand)]">
+          Agendar partida
+        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight">Quando e onde rola?</h1>
+        <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+          A lista de presença abre automaticamente.
         </p>
       </header>
 

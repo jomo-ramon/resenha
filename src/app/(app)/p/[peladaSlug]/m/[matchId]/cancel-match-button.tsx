@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui";
 import { type CancelMatchState, cancelMatchAction } from "@/server/actions/match/cancel-match";
 
 const initialState: CancelMatchState = { status: "idle" };
@@ -13,29 +14,33 @@ export function CancelMatchButton({ slug, matchId }: { slug: string; matchId: st
 
   if (!confirming) {
     return (
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="md"
         onClick={() => setConfirming(true)}
-        className="inline-flex h-10 items-center justify-center rounded-md border border-red-300 px-4 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950"
+        className="border-[color:var(--color-danger)]/30 text-[color:var(--color-danger)]"
       >
         Cancelar partida
-      </button>
+      </Button>
     );
   }
 
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-red-700 dark:text-red-300">Tem certeza?</span>
+      <span className="text-sm font-medium text-[color:var(--color-danger)]">Tem certeza?</span>
       <button
         type="button"
         onClick={() => setConfirming(false)}
-        className="text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
+        className="text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
       >
         Não
       </button>
       <ConfirmButton />
       {state.status === "error" && state.message && (
-        <p className="w-full text-xs text-red-700 dark:text-red-300">{state.message}</p>
+        <p className="w-full text-xs font-medium text-[color:var(--color-danger)]">
+          {state.message}
+        </p>
       )}
     </form>
   );
@@ -44,12 +49,8 @@ export function CancelMatchButton({ slug, matchId }: { slug: string; matchId: st
 function ConfirmButton() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
-    >
+    <Button type="submit" variant="danger" size="sm" disabled={pending}>
       {pending ? "Cancelando..." : "Sim, cancelar"}
-    </button>
+    </Button>
   );
 }

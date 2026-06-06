@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { Button, Card, CardBody, CardHeader } from "@/components/ui";
 import {
   type RegenerateInviteTokenState,
   regenerateInviteTokenAction,
@@ -31,84 +32,104 @@ export function InvitePanel({ slug, inviteToken }: { slug: string; inviteToken: 
     }
   }
 
+  async function shareInvite() {
+    if (typeof navigator === "undefined" || !navigator.share) {
+      copyToClipboard();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: "Entra na pelada",
+        text: "Tô te chamando pra essa pelada. Entra aí:",
+        url: inviteUrl,
+      });
+    } catch {
+      // user cancelled; ignore
+    }
+  }
+
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            Convidar galera
-          </h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Compartilha esse link no grupo. Quem entrar vira jogador da pelada.
-          </p>
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold tracking-tight">Convidar galera</h2>
+            <p className="mt-0.5 text-xs text-[color:var(--color-ink-soft)]">
+              Compartilha esse link no grupo. Quem entrar vira jogador da pelada.
+            </p>
+          </div>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <input
-          type="text"
-          readOnly
-          value={inviteUrl}
-          onFocus={(e) => e.currentTarget.select()}
-          className="block h-11 flex-1 truncate rounded-md border border-zinc-300 bg-zinc-50 px-3 font-mono text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-        />
-        <button
-          type="button"
-          onClick={copyToClipboard}
-          className="inline-flex h-11 items-center justify-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          {copied ? "Copiado!" : "Copiar"}
-        </button>
-      </div>
+      <CardBody className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            readOnly
+            value={inviteUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            className="block h-11 flex-1 truncate rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 font-mono text-xs text-[color:var(--color-ink-soft)]"
+          />
+          <div className="flex gap-2">
+            <Button type="button" variant="primary" size="md" onClick={copyToClipboard}>
+              {copied ? "✓ Copiado" : "Copiar"}
+            </Button>
+            <Button type="button" variant="outline" size="md" onClick={shareInvite}>
+              Compartilhar
+            </Button>
+          </div>
+        </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        {state.status === "success" && state.message ? (
-          <p className="text-xs text-emerald-700 dark:text-emerald-400">{state.message}</p>
-        ) : state.status === "error" && state.message ? (
-          <p className="text-xs text-red-600 dark:text-red-400">{state.message}</p>
-        ) : (
-          <p className="text-xs text-zinc-500">
-            Renovar o link revoga o anterior. Quem ainda não entrou perde o acesso.
-          </p>
-        )}
+        <div className="flex items-center justify-between gap-3">
+          {state.status === "success" && state.message ? (
+            <p className="text-xs font-medium text-[color:var(--color-brand-strong)]">
+              {state.message}
+            </p>
+          ) : state.status === "error" && state.message ? (
+            <p className="text-xs font-medium text-[color:var(--color-danger)]">{state.message}</p>
+          ) : (
+            <p className="text-xs text-[color:var(--color-ink-muted)]">
+              Renovar revoga o link anterior.
+            </p>
+          )}
 
-        {confirming ? (
-          <form action={formAction} className="flex items-center gap-2">
+          {confirming ? (
+            <form action={formAction} className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="text-xs text-[color:var(--color-ink-muted)] underline-offset-4 hover:underline"
+              >
+                Cancelar
+              </button>
+              <ConfirmRegenerateButton onConfirmed={() => setConfirming(false)} />
+            </form>
+          ) : (
             <button
               type="button"
-              onClick={() => setConfirming(false)}
-              className="text-xs text-zinc-500 underline-offset-4 hover:underline"
+              onClick={() => setConfirming(true)}
+              className="shrink-0 text-xs text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
             >
-              Cancelar
+              Renovar link
             </button>
-            <ConfirmRegenerateButton onConfirmed={() => setConfirming(false)} />
-          </form>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="shrink-0 text-xs text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
-          >
-            Renovar link
-          </button>
-        )}
-      </div>
-    </section>
+          )}
+        </div>
+      </CardBody>
+    </Card>
   );
 }
 
 function ConfirmRegenerateButton({ onConfirmed }: { onConfirmed: () => void }) {
   const { pending } = useFormStatus();
   return (
-    <button
+    <Button
       type="submit"
+      variant="danger"
+      size="sm"
       disabled={pending}
-      onClick={() => {
-        setTimeout(onConfirmed, 0);
-      }}
-      className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+      onClick={() => setTimeout(onConfirmed, 0)}
     >
-      {pending ? "Renovando..." : "Confirmar renovar"}
-    </button>
+      {pending ? "Renovando..." : "Confirmar"}
+    </Button>
   );
 }

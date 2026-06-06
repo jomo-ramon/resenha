@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/ui";
 import { type AcceptInviteState, acceptInviteAction } from "@/server/actions/pelada/accept-invite";
 
 const initialState: AcceptInviteState = { status: "idle" };
@@ -13,7 +14,7 @@ export function AcceptInviteForm({ slug, token }: { slug: string; token: string 
   return (
     <form action={formAction} className="space-y-3">
       {state.status === "error" && state.message && (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger-soft)] px-4 py-3 text-sm font-medium text-[color:var(--color-danger)]">
           {state.message}
         </p>
       )}
@@ -25,12 +26,8 @@ export function AcceptInviteForm({ slug, token }: { slug: string; token: string 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="flex h-12 w-full items-center justify-center rounded-full bg-zinc-900 px-5 text-base font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-    >
-      {pending ? "Aceitando..." : "Aceitar convite"}
-    </button>
+    <Button type="submit" variant="primary" size="xl" fullWidth disabled={pending}>
+      {pending ? "Entrando..." : "Entrar na pelada"}
+    </Button>
   );
 }
