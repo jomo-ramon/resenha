@@ -49,53 +49,80 @@ Leia os documentos abaixo **antes** de propor mudanças. Não invente padrões �
 <!-- END:resenha-conventions -->
 
 <!-- BEGIN:current-state -->
-# Estado atual da sessão (2026-06-05)
+# Estado atual da sessão (2026-06-06)
 
 > Esta seção é **temporária** — atualizar conforme avançamos. Quando F1 estiver pronto, remover.
 
 ## ✅ Concluído
 
+### Infra & tooling
+
 - Scaffold Next.js 16 + React 19 + TS strict (commits `1d914ce`, `85de91c`)
 - Tooling: Biome, Husky, lint-staged, commitlint, Vitest, Playwright, Drizzle Kit
 - Estrutura de pastas em `src/` (camadas: `app`, `server/{actions,queries,services}`, `lib/{domain,db,auth,utils,errors}`, `components/{ui,domain}`)
 - Utils base: `cn`, `Result`, `AppError` hierarchy, branded IDs
-- CI workflow (`.github/workflows/ci.yml`)
-- **Supabase**: projeto criado (sa-east-1), `DATABASE_URL` em `.env.local`
-- **Auth.js**: `AUTH_SECRET` gerado em `.env.local`
+- CI workflow (`.github/workflows/ci.yml`) — verde no último push
 - `commitlint` flexibilizado pra ignorar commits internos de ferramentas (`checkpoint`, `Merge`, `Revert`, `WIP`) — commit `6631424`
+- `dotenv` devDep + `drizzle.config.ts` lê `.env.local` automaticamente
+- `biome.json` ignora `src/lib/db/migrations/` (evita guerra de format com drizzle-kit)
+- `vitest.test:ci` com `--passWithNoTests` (CI não bloqueia enquanto a gente não tem testes)
 
-## 🧑‍💻 Pendente do humano (não tem como agent fazer sozinho)
+### Serviços externos (todas as 3 etapas humanas concluídas)
 
-Pra liberar autonomia total do agent, o usuário precisa concluir, em ordem:
+- **Supabase**: projeto criado (sa-east-1), `DATABASE_URL` (pooler 6543) em `.env.local`
+- **Auth.js secret**: `AUTH_SECRET` gerado em `.env.local`
+- **Google OAuth**: Client criado no Google Cloud Console; `AUTH_GOOGLE_ID` + `AUTH_GOOGLE_SECRET` em `.env.local`; redirect URIs configuradas pra `http://localhost:3000` **e** `https://resenha-ten.vercel.app`
+- **Resend**: conta criada, API key em `AUTH_RESEND_KEY`; remetente `onboarding@resend.dev` (sandbox — só envia pro e-mail dono da conta)
+- **Vercel**: projeto importado de `jomo-ramon/resenha`, todas as env vars cadastradas (incluindo `AUTH_URL`/`NEXTAUTH_URL` apontando pra prod), deploy ao vivo em **https://resenha-ten.vercel.app/**
 
-1. **Google OAuth credentials** — Google Cloud Console → criar OAuth Client → copiar `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` pra `.env.local`. Redirect: `http://localhost:3000/api/auth/callback/google` (e domínio Vercel depois).
-2. **Resend (magic link email)** — criar conta em resend.com (free tier 3k/mês) → API key → `RESEND_API_KEY` em `.env.local`. Domínio inicial: usar `onboarding@resend.dev` em dev.
-3. **Vercel** — login com GitHub → import do repo `jomo-ramon/resenha` → colar **todas** as env vars de `.env.local` no painel da Vercel → deploy.
+> ⚠️ **Pendências menores no Vercel/Supabase** (não bloqueiam F1):
+> - Vars de Supabase Storage (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) ficaram vazias — só precisam quando ligarmos upload de foto (F2).
+> - Domínio próprio na Vercel — F4 (cobrança/marketing). Por enquanto `resenha-ten.vercel.app` serve.
 
-## 🤖 Pode ser feito pelo agent sem bloqueio humano
+### Persistência
 
-Depois das 3 etapas acima, o agent pode entregar (validação humana apenas no final de cada bloco):
+- **Schema F1 completo** em `src/lib/db/schema/` — 11 tabelas:
+  - `auth.ts`: `user`, `account`, `session`, `verificationToken` (compat 100% com `@auth/drizzle-adapter`)
+  - `peladas.ts`: `pelada`, `membership` (com unique `userId+peladaId`)
+  - `matches.ts`: `match`, `rosterEntry`, `team`, `teamPlayer`, `matchEvent`
+- **Drizzle client singleton** em `src/lib/db/client.ts` (Postgres.js + pooled, `prepare: false`)
+- **Primeira migration** (`0000_past_wither.sql`) aplicada no Supabase
 
-1. Schema Drizzle F1 (`src/lib/db/schema/`)
-2. Drizzle migrations + seed dev
-3. Auth.js v5 config (`src/lib/auth/`)
-4. Server actions/queries com tenant isolation (`getPeladaContext`)
-5. Onboarding (criar pelada)
-6. Dashboard da pelada
-7. Criar partida + lista de presença
-8. Sorteio de times
-9. Modo juiz + finalizar partida
-10. Ranking artilharia
-11. PWA setup (manifest, icons, service worker via `next-pwa`)
+### Auth + multi-tenancy
 
-## 📦 Pendente no Git
+- **Auth.js v5** em `src/lib/auth/index.ts` — DrizzleAdapter + Google + Resend (magic link), session strategy `database`, `trustHost: true`
+- **Route handler** em `src/app/api/auth/[...nextauth]/route.ts`
+- **`getPeladaContext(slug)` + `assertRole(...)`** em `src/lib/multitenancy.ts` — toda Server Action escopada por Pelada DEVE começar por aqui
 
-- 2 commits locais ainda não pushed: `docs: update README...` (`b9a15da`) + `chore(commitlint): ignore tool-generated...` (`6631424`)
-- **Próximo handoff:** o novo agent deve começar por `git push origin main`.
+### Primeira UI funcional
+
+- **`/entrar`** (`src/app/(auth)/entrar/page.tsx`) — botão Google + form de magic link, mensagens de erro em pt-BR, copy informal ("entra e bora")
+- **`/`** atualizada — saudação + sair quando logado; CTA "Entrar" quando deslogado
+- **Validado em prod**: login Google + sair funcionam ao vivo (06/06 ~01:20)
+
+## 🤖 Próximos blocos (agent pode tocar sozinho)
+
+Validação humana só **no final de cada bloco** (visual + smoke test).
+
+1. **Seed dev** — script `pnpm db:seed` que cria 1 pelada "Cornetas" + 1 admin user; útil pra testar dashboard sem precisar do fluxo de onboarding. *(Opcional — pode entrar depois do bloco 2 se preferir testar onboarding primeiro.)*
+2. **Onboarding** (`/nova-pelada`) — form que cria `Pelada` + `Membership(role=admin)` pro user logado; redireciona pra dashboard.
+3. **Listagem das peladas do user** em `/peladas` (e/ou home redireciona se só tem uma) — Server Component lendo via `db`.
+4. **Dashboard da pelada** (`/p/[slug]`) — usa `getPeladaContext`, mostra próxima partida, lista de jogadores, links pra ações principais.
+5. **Convite de jogadores** (link público `/p/[slug]/entrar?token=...`) — cria `Membership(status=invited)`.
+6. **Criar partida + lista de presença** — estados `scheduled` → `roster_open` → `teams_drafted`, auto-promoção de waitlist em transação única.
+7. **Sorteio de times** — começa com 2 times no manual; algoritmo equilibrado vai pra F2 (decisão em aberto).
+8. **Modo juiz + finalizar partida** — FSM completa (`MatchStateMachine`), lock otimista `activeRefereeId`, registro de gols/assistências.
+9. **Ranking artilharia** (`/p/[slug]/ranking`) — query agregando `matchEvent` por `membershipId`.
+10. **PWA setup** — manifest, ícones, service worker via `next-pwa`.
+
+## 📦 Estado do Git
+
+- Branch `main` sincronizada com `origin/main` (último commit: `9bc7039`).
+- CI verde no último push.
 
 ## 🔑 Princípios de trabalho
 
 - **Validação por bloco, não por linha.** Agent entrega features fechadas com checklist; humano valida visualmente e testa fluxo.
-- **Hoje madrugada (≥ 01h):** humano cansado — agent prioriza configurações leves e tarefas mecânicas. Decisões de arquitetura grandes ficam pra próxima sessão com cabeça fresca.
-- **Sempre rodar `pnpm typecheck && pnpm lint && pnpm test` antes de commit.**
+- **Sempre rodar `pnpm typecheck && pnpm lint && pnpm test:ci && pnpm build` antes de commit.**
+- **Decisões de arquitetura grandes** (algoritmo de sorteio equilibrado, modelo de cobrança F4) só com cabeça fresca — agendar pra sessão diurna.
 <!-- END:current-state -->
