@@ -17,7 +17,8 @@
       "!**/playwright-report",
       "!**/test-results",
       "!**/next-env.d.ts",
-      "!**/pnpm-lock.yaml"
+      "!**/pnpm-lock.yaml",
+      "!src/lib/db/migrations"
     ]
   },
   "formatter": {
