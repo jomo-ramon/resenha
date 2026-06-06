@@ -16,19 +16,33 @@ const errorMessages: Record<string, string> = {
   Default: "Algo deu errado no login. Tenta de novo.",
 };
 
+/**
+ * Only allow same-origin relative paths as post-login redirects.
+ * Rejects absolute URLs and protocol-relative (`//evil.com`) to prevent
+ * open-redirect via the callbackUrl query param.
+ */
+function safeCallbackPath(raw: string | undefined): string {
+  if (!raw) return "/peladas";
+  if (!raw.startsWith("/")) return "/peladas";
+  if (raw.startsWith("//")) return "/peladas";
+  return raw;
+}
+
 export default async function EntrarPage({ searchParams }: { searchParams: SearchParams }) {
   const session = await auth();
   const { error, callbackUrl } = await searchParams;
 
+  const target = safeCallbackPath(callbackUrl);
+
   if (session?.user) {
-    redirect(callbackUrl ?? "/peladas");
+    redirect(target);
   }
 
   const errorMessage = error ? (errorMessages[error] ?? errorMessages.Default) : null;
 
   async function signInWithGoogle() {
     "use server";
-    await signIn("google", { redirectTo: "/peladas" });
+    await signIn("google", { redirectTo: target });
   }
 
   async function signInWithResend(formData: FormData) {
@@ -37,7 +51,8 @@ export default async function EntrarPage({ searchParams }: { searchParams: Searc
       await signIn("resend", formData);
     } catch (e) {
       if (e instanceof AuthError) {
-        redirect("/entrar?error=Default");
+        const errorTarget = `/entrar?error=Default&callbackUrl=${encodeURIComponent(target)}`;
+        redirect(errorTarget);
       }
       throw e;
     }
@@ -79,6 +94,7 @@ export default async function EntrarPage({ searchParams }: { searchParams: Searc
         </div>
 
         <form action={signInWithResend} className="space-y-3">
+          <input type="hidden" name="redirectTo" value={target} />
           <div className="space-y-1.5">
             <label
               htmlFor="email"
