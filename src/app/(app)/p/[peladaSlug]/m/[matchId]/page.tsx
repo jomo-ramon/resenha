@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { canCancelMatch, isRosterAcceptingResponses } from "@/lib/domain/match";
+import { TEAM_DARK, TEAM_LIGHT } from "@/lib/domain/team-draft";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
 import { getMatchWithRoster } from "@/server/queries/matches";
 import { AttendanceButtons } from "./attendance-buttons";
 import { CancelMatchButton } from "./cancel-match-button";
+import { ClearDraftButton } from "./clear-draft-button";
+import { RefereePanel } from "./referee-panel";
+import { StartMatchButton } from "./start-match-button";
+import { MatchEventsTimeline, TeamsBoard } from "./teams-board";
 
 type Params = Promise<{ peladaSlug: string; matchId: string }>;
 
@@ -57,7 +62,7 @@ export default async function MatchPage({ params }: { params: Params }) {
   const detail = await getMatchWithRoster(ctx.pelada.id, matchId);
   if (!detail) notFound();
 
-  const { match, roster } = detail;
+  const { match, roster, teams, events } = detail;
 
   const confirmed = roster.filter((r) => r.status === "confirmed");
   const waitlist = roster.filter((r) => r.status === "waitlist");
@@ -65,8 +70,25 @@ export default async function MatchPage({ params }: { params: Params }) {
 
   const myEntry = roster.find((r) => r.membershipId === ctx.membership.id) ?? null;
   const isAdmin = ctx.membership.role === "admin";
+  const isReferee = isAdmin || ctx.membership.role === "referee";
   const rosterOpen = isRosterAcceptingResponses(match.status);
   const cancellable = isAdmin && canCancelMatch(match.status);
+
+  const rosterLookup = new Map<string, string>();
+  for (const r of roster) rosterLookup.set(r.membershipId, r.displayName);
+
+  const teamLookup = new Map<string, string>();
+  for (const t of teams) teamLookup.set(t.team.id, t.team.name);
+
+  const lightTeam = teams.find((t) => t.team.name === TEAM_LIGHT.name);
+  const darkTeam = teams.find((t) => t.team.name === TEAM_DARK.name);
+
+  const showTeams =
+    match.status === "teams_drafted" ||
+    match.status === "in_progress" ||
+    match.status === "finished";
+
+  const showRosterPanels = match.status === "roster_open";
 
   return (
     <div className="space-y-6">
@@ -102,29 +124,22 @@ export default async function MatchPage({ params }: { params: Params }) {
         </p>
       )}
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="flex items-center justify-between gap-3">
+      {rosterOpen && (
+        <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
               Sua presença
             </h2>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              {match.status === "cancelled"
-                ? "Essa partida foi cancelada."
-                : !rosterOpen
-                  ? "A lista de presença não está aceitando respostas."
-                  : myEntry?.status === "confirmed"
-                    ? "Você tá confirmado pra essa partida."
-                    : myEntry?.status === "waitlist"
-                      ? `Você está na lista de espera (posição ${waitlist.findIndex((w) => w.membershipId === ctx.membership.id) + 1}).`
-                      : myEntry?.status === "declined"
-                        ? "Você desistiu dessa partida. Pode confirmar de novo se mudar de ideia."
-                        : "Você ainda não respondeu."}
+              {myEntry?.status === "confirmed"
+                ? "Você tá confirmado pra essa partida."
+                : myEntry?.status === "waitlist"
+                  ? `Você está na lista de espera (posição ${waitlist.findIndex((w) => w.membershipId === ctx.membership.id) + 1}).`
+                  : myEntry?.status === "declined"
+                    ? "Você desistiu. Pode confirmar de novo se mudar de ideia."
+                    : "Você ainda não respondeu."}
             </p>
           </div>
-        </div>
-
-        {rosterOpen && (
           <div className="mt-4">
             <AttendanceButtons
               slug={peladaSlug}
@@ -132,17 +147,78 @@ export default async function MatchPage({ params }: { params: Params }) {
               currentStatus={myEntry?.status ?? null}
             />
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      <RosterSection
-        title={`Confirmados (${confirmed.length}/${ctx.pelada.maxPlayers})`}
-        emptyLabel="Ninguém confirmou ainda."
-        rows={confirmed}
-        highlightMembershipId={ctx.membership.id}
-      />
+      {match.status === "roster_open" && isAdmin && confirmed.length >= 2 && (
+        <Link
+          href={`/p/${peladaSlug}/m/${matchId}/times`}
+          className="flex h-12 items-center justify-center rounded-full bg-zinc-900 px-5 text-base font-semibold text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          Sortear times
+        </Link>
+      )}
 
-      {waitlist.length > 0 && (
+      {showTeams && lightTeam && darkTeam && (
+        <TeamsBoard match={match} teams={teams} events={events} rosterLookup={rosterLookup} />
+      )}
+
+      {match.status === "teams_drafted" && isReferee && (
+        <div className="space-y-2">
+          <StartMatchButton slug={peladaSlug} matchId={matchId} />
+          {isAdmin && (
+            <div className="text-right">
+              <ClearDraftButton slug={peladaSlug} matchId={matchId} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {match.status === "in_progress" && isReferee && lightTeam && darkTeam && (
+        <RefereePanel
+          slug={peladaSlug}
+          matchId={matchId}
+          lightTeam={{
+            id: lightTeam.team.id,
+            name: lightTeam.team.name,
+            players: lightTeam.playerMembershipIds.map((mid) => ({
+              membershipId: mid,
+              displayName: rosterLookup.get(mid) ?? "—",
+            })),
+          }}
+          darkTeam={{
+            id: darkTeam.team.id,
+            name: darkTeam.team.name,
+            players: darkTeam.playerMembershipIds.map((mid) => ({
+              membershipId: mid,
+              displayName: rosterLookup.get(mid) ?? "—",
+            })),
+          }}
+          events={events.map((e) => ({
+            id: e.id,
+            type: e.type,
+            minute: e.minute,
+            teamId: e.teamId,
+            membershipId: e.membershipId,
+            displayName: e.displayName,
+          }))}
+        />
+      )}
+
+      {match.status === "finished" && (
+        <MatchEventsTimeline events={events} rosterLookup={rosterLookup} teamLookup={teamLookup} />
+      )}
+
+      {showRosterPanels && (
+        <RosterSection
+          title={`Confirmados (${confirmed.length}/${ctx.pelada.maxPlayers})`}
+          emptyLabel="Ninguém confirmou ainda."
+          rows={confirmed}
+          highlightMembershipId={ctx.membership.id}
+        />
+      )}
+
+      {showRosterPanels && waitlist.length > 0 && (
         <RosterSection
           title={`Lista de espera (${waitlist.length})`}
           emptyLabel="Lista vazia."
@@ -152,7 +228,7 @@ export default async function MatchPage({ params }: { params: Params }) {
         />
       )}
 
-      {declined.length > 0 && (
+      {showRosterPanels && declined.length > 0 && (
         <RosterSection
           title={`Desistiram (${declined.length})`}
           emptyLabel=""
@@ -168,7 +244,7 @@ export default async function MatchPage({ params }: { params: Params }) {
             Zona perigosa
           </h2>
           <p className="mt-1 text-sm text-red-700 dark:text-red-300">
-            Cancelar partida apaga todas as confirmações. Antes do sorteio dos times.
+            Cancelar partida apaga tudo. Antes do sorteio dos times.
           </p>
           <div className="mt-3">
             <CancelMatchButton slug={peladaSlug} matchId={matchId} />
