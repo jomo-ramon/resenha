@@ -1,26 +1,180 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/**
+ * resenha design tokens
+ * ---
+ * Brand identity: pelada (street football) — vivid pitch green + warm
+ * neutrals + functional yellow/red cards.
+ *
+ * Surfaces are intentionally warm (stone, not zinc) so the green pops.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* warm neutrals (stone family) */
+  --color-surface: #fafaf9;
+  --color-surface-raised: #ffffff;
+  --color-surface-muted: #f5f5f4;
+  --color-ink: #1c1917;
+  --color-ink-soft: #57534e;
+  --color-ink-muted: #a8a29e;
+  --color-border: #e7e5e4;
+  --color-border-strong: #d6d3d1;
+
+  /* brand: pitch green */
+  --color-brand: #16a34a;
+  --color-brand-strong: #15803d;
+  --color-brand-soft: #dcfce7;
+  --color-brand-ink: #052e16;
+
+  /* functional */
+  --color-warning: #f59e0b;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-card-yellow: #fbbf24;
+  --color-card-red: #ef4444;
+  --color-captain: #f59e0b;
+  --color-medal-gold: #eab308;
+  --color-medal-silver: #94a3b8;
+  --color-medal-bronze: #b45309;
+
+  /* team colors (light/dark match draft) */
+  --color-team-light: #fafaf9;
+  --color-team-light-ink: #1c1917;
+  --color-team-dark: #18181b;
+  --color-team-dark-ink: #fafaf9;
+
+  /* radii — bold rounded for cartola feel */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* shadows — soft, layered */
+  --shadow-sm: 0 1px 2px 0 rgb(28 25 23 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(28 25 23 / 0.08), 0 2px 4px -2px rgb(28 25 23 / 0.04);
+  --shadow-lg: 0 12px 28px -8px rgb(28 25 23 / 0.18), 0 4px 8px -4px rgb(28 25 23 / 0.06);
+  --shadow-brand: 0 8px 24px -8px rgb(22 163 74 / 0.45);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-surface: #0c0a09;
+    --color-surface-raised: #1c1917;
+    --color-surface-muted: #1c1917;
+    --color-ink: #fafaf9;
+    --color-ink-soft: #d6d3d1;
+    --color-ink-muted: #78716c;
+    --color-border: #292524;
+    --color-border-strong: #44403c;
+
+    --color-brand: #22c55e;
+    --color-brand-strong: #16a34a;
+    --color-brand-soft: #14532d;
+    --color-brand-ink: #dcfce7;
+
+    --color-warning-soft: #422006;
+    --color-danger-soft: #450a0a;
+
+    --color-team-light: #fafaf9;
+    --color-team-light-ink: #1c1917;
+    --color-team-dark: #0c0a09;
+    --color-team-dark-ink: #fafaf9;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 12px 28px -8px rgb(0 0 0 / 0.6), 0 4px 8px -4px rgb(0 0 0 / 0.4);
   }
 }
 
+@theme inline {
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-ink);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-brand: var(--color-brand);
+  --color-brand-strong: var(--color-brand-strong);
+  --color-brand-soft: var(--color-brand-soft);
+  --color-brand-ink: var(--color-brand-ink);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-captain: var(--color-captain);
+  --color-medal-gold: var(--color-medal-gold);
+  --color-medal-silver: var(--color-medal-silver);
+  --color-medal-bronze: var(--color-medal-bronze);
+  --color-team-light: var(--color-team-light);
+  --color-team-light-ink: var(--color-team-light-ink);
+  --color-team-dark: var(--color-team-dark);
+  --color-team-dark-ink: var(--color-team-dark-ink);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+
+html {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: inherit;
+}
+
+/* subtle pitch pattern available on demand via .bg-pitch */
+.bg-pitch {
+  background-color: var(--color-brand);
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 28px,
+    rgb(255 255 255 / 0.04) 28px,
+    rgb(255 255 255 / 0.04) 29px
+  );
+}
+
+/* spotlight gradient used in hero / score cards */
+.bg-brand-gradient {
+  background: linear-gradient(135deg, var(--color-brand-strong) 0%, #047857 100%);
+}
+
+/* utility: tabular numbers for scores/rankings */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* respect users that prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms;
+    transition-duration: 0.001ms;
+    animation-iteration-count: 1;
+  }
 }
