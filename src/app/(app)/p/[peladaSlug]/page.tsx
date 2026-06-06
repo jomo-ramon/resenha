@@ -54,9 +54,17 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{pelada.description}</p>
           )}
         </div>
-        <span className="shrink-0 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-          {ROLE_LABELS[membership.role] ?? membership.role}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+            {ROLE_LABELS[membership.role] ?? membership.role}
+          </span>
+          <Link
+            href={`/p/${pelada.slug}/perfil`}
+            className="text-xs text-zinc-500 underline-offset-4 hover:underline"
+          >
+            Editar perfil
+          </Link>
+        </div>
       </div>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
@@ -84,6 +92,15 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
       {membership.role === "admin" && (
         <InvitePanel slug={pelada.slug} inviteToken={pelada.inviteToken} />
       )}
+
+      <nav className="flex flex-wrap gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+        <Link
+          href={`/p/${pelada.slug}/ranking`}
+          className="text-sm font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+        >
+          🏆 Ranking de artilharia
+        </Link>
+      </nav>
     </div>
   );
 }
