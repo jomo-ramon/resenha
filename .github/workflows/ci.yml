@@ -40,3 +40,7 @@ jobs:
           AUTH_SECRET: stub-secret-for-build-only-not-used-at-runtime
           AUTH_URL: http://localhost:3000
           NEXTAUTH_URL: http://localhost:3000
+          AUTH_GOOGLE_ID: stub-google-id
+          AUTH_GOOGLE_SECRET: stub-google-secret
+          AUTH_RESEND_KEY: stub-resend-key
+          AUTH_EMAIL_FROM: stub@example.com
