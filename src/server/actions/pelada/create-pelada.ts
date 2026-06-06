@@ -85,6 +85,7 @@ export async function createPeladaAction(
           location: input.location,
           address: input.address || null,
           maxPlayers: input.maxPlayers,
+          inviteToken: crypto.randomUUID(),
           ownerUserId: user.id,
         })
         .returning({ id: peladas.id, slug: peladas.slug });

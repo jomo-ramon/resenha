@@ -54,6 +54,14 @@ export const peladas = pgTable("pelada", {
   address: text("address"),
   maxPlayers: integer("maxPlayers").notNull().default(20),
   rules: jsonb("rules").$type<PeladaRules>().notNull().default({}),
+  /**
+   * Public-link invite token. Rotating it revokes the previous link.
+   * Validated together with the slug in the accept-invite flow.
+   */
+  inviteToken: text("inviteToken")
+    .notNull()
+    .unique()
+    .$defaultFn(() => crypto.randomUUID()),
   ownerUserId: text("ownerUserId")
     .notNull()
     .references(() => users.id, { onDelete: "restrict" }),
