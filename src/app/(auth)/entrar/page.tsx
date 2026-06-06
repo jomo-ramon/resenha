@@ -21,14 +21,14 @@ export default async function EntrarPage({ searchParams }: { searchParams: Searc
   const { error, callbackUrl } = await searchParams;
 
   if (session?.user) {
-    redirect(callbackUrl ?? "/");
+    redirect(callbackUrl ?? "/peladas");
   }
 
   const errorMessage = error ? (errorMessages[error] ?? errorMessages.Default) : null;
 
   async function signInWithGoogle() {
     "use server";
-    await signIn("google", { redirectTo: "/" });
+    await signIn("google", { redirectTo: "/peladas" });
   }
 
   async function signInWithResend(formData: FormData) {
