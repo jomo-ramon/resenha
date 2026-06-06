@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
+import { InvitePanel } from "./invite-panel";
 
 type Params = Promise<{ peladaSlug: string }>;
 
@@ -70,6 +71,10 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
           <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">{pelada.address}</p>
         )}
       </section>
+
+      {membership.role === "admin" && (
+        <InvitePanel slug={pelada.slug} inviteToken={pelada.inviteToken} />
+      )}
 
       <section className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
         <h2 className="text-lg font-semibold">Nenhuma partida ainda</h2>
