@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
+import { getNextUpcomingMatch } from "@/server/queries/matches";
 import { InvitePanel } from "./invite-panel";
 
 type Params = Promise<{ peladaSlug: string }>;
@@ -41,6 +42,7 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
   }
 
   const { pelada, membership } = ctx;
+  const upcoming = await getNextUpcomingMatch(pelada.id);
 
   return (
     <div className="space-y-6">
@@ -72,26 +74,105 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
         )}
       </section>
 
+      <UpcomingMatchSection
+        slug={pelada.slug}
+        maxPlayers={pelada.maxPlayers}
+        isAdmin={membership.role === "admin"}
+        upcoming={upcoming}
+      />
+
       {membership.role === "admin" && (
         <InvitePanel slug={pelada.slug} inviteToken={pelada.inviteToken} />
       )}
-
-      <section className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
-        <h2 className="text-lg font-semibold">Nenhuma partida ainda</h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Agendamento de partida vem no próximo bloco. Por enquanto, a pelada tá criada e você é{" "}
-          {membership.role === "admin" ? "o admin" : "membro"}.
-        </p>
-        <Link
-          href="/peladas"
-          className="mt-4 inline-block text-sm text-zinc-600 underline-offset-4 hover:underline dark:text-zinc-400"
-        >
-          ← Voltar pra minhas peladas
-        </Link>
-      </section>
     </div>
   );
 }
+
+function UpcomingMatchSection({
+  slug,
+  maxPlayers,
+  isAdmin,
+  upcoming,
+}: {
+  slug: string;
+  maxPlayers: number;
+  isAdmin: boolean;
+  upcoming: Awaited<ReturnType<typeof getNextUpcomingMatch>>;
+}) {
+  if (!upcoming) {
+    return (
+      <section className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+        <h2 className="text-lg font-semibold">Nenhuma partida agendada</h2>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          {isAdmin
+            ? "Agenda a próxima e abre a lista de presença pra galera."
+            : "Quando o admin agendar, ela aparece aqui."}
+        </p>
+        {isAdmin && (
+          <Link
+            href={`/p/${slug}/nova-partida`}
+            className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            Agendar partida
+          </Link>
+        )}
+      </section>
+    );
+  }
+
+  const { match, confirmedCount, waitlistCount } = upcoming;
+
+  return (
+    <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+            Próxima partida
+          </h2>
+          <p className="mt-1 text-lg font-semibold first-letter:capitalize">
+            {MATCH_DATE_FORMATTER.format(match.scheduledFor)}
+          </p>
+          {match.locationOverride && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">{match.locationOverride}</p>
+          )}
+          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">
+            <span className="font-semibold">{confirmedCount}</span>
+            <span className="text-zinc-500"> / {maxPlayers} confirmados</span>
+            {waitlistCount > 0 && (
+              <span className="text-zinc-500"> · {waitlistCount} na espera</span>
+            )}
+          </p>
+        </div>
+        <Link
+          href={`/p/${slug}/m/${match.id}`}
+          className="inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          Abrir
+        </Link>
+      </div>
+
+      {isAdmin && (
+        <div className="mt-4 text-right">
+          <Link
+            href={`/p/${slug}/nova-partida`}
+            className="text-xs text-zinc-500 underline-offset-4 hover:underline"
+          >
+            + Agendar outra partida
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const MATCH_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "long",
+  day: "2-digit",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "America/Sao_Paulo",
+});
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
