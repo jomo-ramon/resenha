@@ -3,7 +3,7 @@
  * `getPeladaContext(slug)` and pass the verified peladaId here.
  */
 
-import { and, asc, desc, eq, gte, inArray, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, ne } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import {
   type Match,
@@ -83,6 +83,59 @@ export type MatchDetail = {
   teams: TeamWithPlayers[];
   events: MatchEventRow[];
 };
+
+export type MatchListItem = {
+  match: Match;
+  confirmedCount: number;
+};
+
+/**
+ * Lists matches for a pelada, newest first. Pass `status` to filter (e.g.
+ * upcoming vs finished). When no status is passed, returns everything.
+ */
+export async function listMatches(
+  peladaId: string,
+  options: { status?: Match["status"][]; limit?: number } = {},
+): Promise<MatchListItem[]> {
+  const { status, limit = 50 } = options;
+
+  const matchRows = await db
+    .select()
+    .from(matches)
+    .where(
+      status && status.length > 0
+        ? and(eq(matches.peladaId, peladaId), inArray(matches.status, status))
+        : eq(matches.peladaId, peladaId),
+    )
+    .orderBy(desc(matches.scheduledFor))
+    .limit(limit);
+
+  if (matchRows.length === 0) return [];
+
+  const counts = await db
+    .select({
+      matchId: rosterEntries.matchId,
+      confirmedCount: count(rosterEntries.id),
+    })
+    .from(rosterEntries)
+    .where(
+      and(
+        inArray(
+          rosterEntries.matchId,
+          matchRows.map((m) => m.id),
+        ),
+        eq(rosterEntries.status, "confirmed"),
+      ),
+    )
+    .groupBy(rosterEntries.matchId);
+
+  const countLookup = new Map(counts.map((c) => [c.matchId, c.confirmedCount]));
+
+  return matchRows.map((m) => ({
+    match: m,
+    confirmedCount: countLookup.get(m.id) ?? 0,
+  }));
+}
 
 export async function getMatchWithRoster(
   peladaId: string,
