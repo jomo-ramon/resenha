@@ -7,7 +7,7 @@
  */
 
 import { Avatar, Badge, LiveBadge } from "@/components/ui";
-import type { Match } from "@/lib/db/schema";
+import type { Match, MatchEventType } from "@/lib/db/schema";
 import { computeScore, MATCH_EVENT_LABELS } from "@/lib/domain/match-event";
 import { TEAM_DARK, TEAM_LIGHT } from "@/lib/domain/team-draft";
 import type { MatchEventRow, TeamWithPlayers } from "@/server/queries/matches";
@@ -275,4 +275,156 @@ function eventEmoji(type: string): string {
     default:
       return "•";
   }
+}
+
+/**
+ * MatchHighlights — leaderboards scoped to a single match. Counts every
+ * event from `events` and renders Goals / Assists / Cards as three
+ * compact rows. Shown only when there is at least one event.
+ */
+export function MatchHighlights({
+  events,
+  rosterLookup,
+  teamLookup,
+}: {
+  events: MatchEventRow[];
+  rosterLookup: DisplayLookup;
+  teamLookup: DisplayLookup;
+}) {
+  if (events.length === 0) return null;
+
+  const scorers = aggregateBy(events, ["goal", "own_goal"]);
+  const assisters = aggregateBy(events, ["assist"]);
+  const carded = aggregateBy(events, ["yellow_card", "red_card"]);
+
+  const hasAny = scorers.length + assisters.length + carded.length > 0;
+  if (!hasAny) return null;
+
+  return (
+    <section>
+      <h2 className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
+        Destaques da partida
+      </h2>
+      <div className="space-y-3 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-4">
+        <HighlightRow
+          label="Artilheiros"
+          icon="⚽"
+          rows={scorers}
+          rosterLookup={rosterLookup}
+          teamLookup={teamLookup}
+          unit="gol"
+          unitPlural="gols"
+          tone="brand"
+        />
+        <HighlightRow
+          label="Assistências"
+          icon="🅰"
+          rows={assisters}
+          rosterLookup={rosterLookup}
+          teamLookup={teamLookup}
+          unit="assist"
+          unitPlural="assists"
+          tone="info"
+        />
+        <HighlightRow
+          label="Cartões"
+          icon="🟨"
+          rows={carded}
+          rosterLookup={rosterLookup}
+          teamLookup={teamLookup}
+          unit="cartão"
+          unitPlural="cartões"
+          tone="warning"
+        />
+      </div>
+    </section>
+  );
+}
+
+type AggregatedRow = {
+  membershipId: string;
+  teamId: string;
+  count: number;
+};
+
+function aggregateBy(events: MatchEventRow[], types: MatchEventType[]): AggregatedRow[] {
+  const map = new Map<string, AggregatedRow>();
+  for (const e of events) {
+    if (!types.includes(e.type)) continue;
+    const existing = map.get(e.membershipId);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      map.set(e.membershipId, { membershipId: e.membershipId, teamId: e.teamId, count: 1 });
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.count - a.count);
+}
+
+function HighlightRow({
+  label,
+  icon,
+  rows,
+  rosterLookup,
+  teamLookup,
+  unit,
+  unitPlural,
+  tone,
+}: {
+  label: string;
+  icon: string;
+  rows: AggregatedRow[];
+  rosterLookup: DisplayLookup;
+  teamLookup: DisplayLookup;
+  unit: string;
+  unitPlural: string;
+  tone: "brand" | "info" | "warning";
+}) {
+  const toneClasses = {
+    brand: "bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)]",
+    info: "bg-[color:var(--color-info-soft)] text-[color:var(--color-info)]",
+    warning: "bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)]",
+  };
+
+  if (rows.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-[color:var(--color-ink-muted)]">
+        <span className="text-base opacity-50" aria-hidden="true">
+          {icon}
+        </span>
+        <span className="font-bold uppercase tracking-wider text-[10px]">{label}</span>
+        <span>—</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
+        <span className="text-sm" aria-hidden="true">
+          {icon}
+        </span>
+        <span>{label}</span>
+      </div>
+      <ul className="flex flex-wrap gap-1.5">
+        {rows.map((r) => {
+          const name = rosterLookup.get(r.membershipId) ?? "?";
+          const teamName = teamLookup.get(r.teamId) ?? "";
+          return (
+            <li
+              key={r.membershipId}
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ${toneClasses[tone]}`}
+            >
+              <Avatar name={name} size="xs" tone="default" />
+              <span className="font-bold">{name}</span>
+              <span className="font-extrabold tabular-nums">
+                {r.count} {r.count === 1 ? unit : unitPlural}
+              </span>
+              <span className="text-[10px] opacity-70">· {teamName.replace("Time ", "")}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }

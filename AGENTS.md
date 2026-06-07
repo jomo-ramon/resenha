@@ -175,12 +175,19 @@ Leia os documentos abaixo **antes** de propor mudanças. Não invente padrões �
 Validação humana só **no final de cada bloco** (visual + smoke test).
 
 1. **Edição de pelada** — admin trocar nome/dia/horário/local sem precisar de DB direto.
-2. **Gerenciar members** — admin remover, promover/rebaixar role (admin↔referee↔player).
-3. **Histórico de partidas** — `/p/[slug]/historico` paginado com filtro por mês.
-4. **Foto de perfil** — Supabase Storage upload no `/p/[slug]/perfil` (precisa preencher vars `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`).
-5. **Algoritmo de balanceamento** — quando a gente tiver ratings (F2/F3).
-6. **`activeRefereeId` lock otimista** — pra ter mais de 1 admin sem step on each other.
-7. **Seed dev** — script `pnpm db:seed` que cria 1 pelada + N members + 1 match aberto.
+2. **Gerenciar members** — admin remover, promover/rebaixar role (admin↔referee↔player); página `/p/[slug]/jogadores`.
+3. **Editar/cancelar partida** — mudar horário/local; cancelar com motivo registrado.
+4. **Histórico de partidas** — `/p/[slug]/historico` paginado com filtro por mês.
+5. **Compartilhar placar no WhatsApp** — botão na tela `finished` usando Web Share API com texto formatado.
+6. **UX polish** — skeletons de loading (Suspense), toasts de feedback, breadcrumb no `AppHeader`, onboarding pra primeira pelada.
+7. **Foto de perfil** — Supabase Storage upload no `/p/[slug]/perfil` (precisa preencher vars `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`).
+8. **Algoritmo de balanceamento** — quando a gente tiver ratings (F2/F3).
+9. **`activeRefereeId` lock otimista** — pra ter mais de 1 admin sem step on each other.
+
+### ✅ Concluído nesta sessão (madrugada 07/06)
+
+- **Seed dev** (`pnpm db:seed`) — cria `seed-cornetas` com 12 jogadores fictícios + 1 partida com lista aberta (9 confirmados). Idempotente: limpa a pelada anterior antes. Requer `SEED_ADMIN_EMAIL=voce@gmail.com`.
+- **Destaques da partida** — agregação de artilheiros/assists/cartões por partida no card `finished`.
 
 ## 📦 Estado do Git
 

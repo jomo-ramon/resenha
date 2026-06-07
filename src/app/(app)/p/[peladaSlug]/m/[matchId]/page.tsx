@@ -21,7 +21,7 @@ import { CancelMatchButton } from "./cancel-match-button";
 import { ClearDraftButton } from "./clear-draft-button";
 import { RefereePanel } from "./referee-panel";
 import { StartMatchButton } from "./start-match-button";
-import { MatchEventsTimeline, TeamsBoard } from "./teams-board";
+import { MatchEventsTimeline, MatchHighlights, TeamsBoard } from "./teams-board";
 
 type Params = Promise<{ peladaSlug: string; matchId: string }>;
 
@@ -208,7 +208,14 @@ export default async function MatchPage({ params }: { params: Params }) {
       )}
 
       {match.status === "finished" && (
-        <MatchEventsTimeline events={events} rosterLookup={rosterLookup} teamLookup={teamLookup} />
+        <>
+          <MatchHighlights events={events} rosterLookup={rosterLookup} teamLookup={teamLookup} />
+          <MatchEventsTimeline
+            events={events}
+            rosterLookup={rosterLookup}
+            teamLookup={teamLookup}
+          />
+        </>
       )}
 
       {showRosterPanels && (
