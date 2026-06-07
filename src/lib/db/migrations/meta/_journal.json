@@ -15,6 +15,13 @@
       "when": 1780720874130,
       "tag": "0001_amazing_agent_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780810401375,
+      "tag": "0002_chunky_quicksilver",
+      "breakpoints": true
     }
   ]
 }

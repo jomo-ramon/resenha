@@ -31,12 +31,19 @@ export type PreferredPosition = "goalkeeper" | "defender" | "midfielder" | "forw
 /**
  * Per-pelada configurable rules. Kept as JSONB so we can evolve the shape
  * without migrations. Validated at the application boundary with Zod.
+ *
+ * `eventPoints` overrides the default per-event score (DEFAULT_EVENT_POINTS
+ * in lib/domain/scout.ts). Any missing key falls back to the default —
+ * admins only override what they want different.
  */
 export type PeladaRules = {
   matchDurationMinutes?: number;
   teamsPerMatch?: number;
   pointsForWin?: number;
   pointsForDraw?: number;
+  eventPoints?: Partial<
+    Record<"goal" | "own_goal" | "assist" | "save" | "tackle" | "yellow_card" | "red_card", number>
+  >;
 };
 
 export const peladas = pgTable("pelada", {

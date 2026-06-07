@@ -9,6 +9,8 @@ export const matchEventTypeSchema = z.enum([
   "goal",
   "own_goal",
   "assist",
+  "save",
+  "tackle",
   "yellow_card",
   "red_card",
 ]);
@@ -17,8 +19,20 @@ export const MATCH_EVENT_LABELS: Record<MatchEventType, string> = {
   goal: "Gol",
   own_goal: "Gol contra",
   assist: "Assistência",
+  save: "Defesa difícil",
+  tackle: "Desarme",
   yellow_card: "Cartão amarelo",
   red_card: "Cartão vermelho",
+};
+
+export const MATCH_EVENT_EMOJI: Record<MatchEventType, string> = {
+  goal: "⚽",
+  own_goal: "🙃",
+  assist: "🅰",
+  save: "🧤",
+  tackle: "🛡",
+  yellow_card: "🟨",
+  red_card: "🟥",
 };
 
 export const addMatchEventInputSchema = z.object({

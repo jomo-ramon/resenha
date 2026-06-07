@@ -19,7 +19,14 @@ export type MatchStatus =
 
 export type RosterEntryStatus = "confirmed" | "declined" | "waitlist";
 
-export type MatchEventType = "goal" | "own_goal" | "assist" | "yellow_card" | "red_card";
+export type MatchEventType =
+  | "goal"
+  | "own_goal"
+  | "assist"
+  | "save"
+  | "tackle"
+  | "yellow_card"
+  | "red_card";
 
 export const matches = pgTable("match", {
   id: text("id")
@@ -90,6 +97,41 @@ export const teamPlayers = pgTable(
   (tp) => [unique("teamPlayer_teamId_membershipId_unique").on(tp.teamId, tp.membershipId)],
 );
 
+/**
+ * playerRatings — subjective 0–10 grade that the referee/admin gives
+ * to each player after a match. One rating per (match, player) pair.
+ *
+ * Pre-aggregated stats (goals/assists/etc) live in `matchEvents`; ratings
+ * here are the human-judged complement that scout numbers can't capture
+ * (positioning, work ethic, leadership). Used by the ranking page and,
+ * later, by the team-draft balancer.
+ */
+export const playerRatings = pgTable(
+  "playerRating",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    matchId: text("matchId")
+      .notNull()
+      .references(() => matches.id, { onDelete: "cascade" }),
+    membershipId: text("membershipId")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    notes: text("notes"),
+    ratedByMembershipId: text("ratedByMembershipId")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "restrict" }),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (r) => [unique("playerRating_matchId_membershipId_unique").on(r.matchId, r.membershipId)],
+);
+
 export const matchEvents = pgTable("matchEvent", {
   id: text("id")
     .primaryKey()
@@ -118,3 +160,5 @@ export type NewTeam = InferInsertModel<typeof teams>;
 export type TeamPlayer = InferSelectModel<typeof teamPlayers>;
 export type MatchEvent = InferSelectModel<typeof matchEvents>;
 export type NewMatchEvent = InferInsertModel<typeof matchEvents>;
+export type PlayerRating = InferSelectModel<typeof playerRatings>;
+export type NewPlayerRating = InferInsertModel<typeof playerRatings>;
