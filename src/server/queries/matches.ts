@@ -11,6 +11,8 @@ import {
   matchEvents,
   matches,
   memberships,
+  type PlayerRating,
+  playerRatings,
   type RosterEntryStatus,
   rosterEntries,
   type Team,
@@ -240,4 +242,8 @@ export async function listRecentMatches(peladaId: string, limit = 5): Promise<Ma
     .where(eq(matches.peladaId, peladaId))
     .orderBy(desc(matches.scheduledFor))
     .limit(limit);
+}
+
+export async function listMatchRatings(matchId: string): Promise<PlayerRating[]> {
+  return db.select().from(playerRatings).where(eq(playerRatings.matchId, matchId));
 }

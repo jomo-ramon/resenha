@@ -215,6 +215,16 @@ export default async function MatchPage({ params }: { params: Params }) {
             rosterLookup={rosterLookup}
             teamLookup={teamLookup}
           />
+          {isReferee && (
+            <ButtonLink
+              href={`/p/${peladaSlug}/m/${matchId}/scout`}
+              variant="outline"
+              size="lg"
+              fullWidth
+            >
+              ✏ Editar scout & notas
+            </ButtonLink>
+          )}
         </>
       )}
 

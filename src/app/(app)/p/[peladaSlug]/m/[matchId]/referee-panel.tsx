@@ -57,8 +57,51 @@ export function RefereePanel({
   return (
     <section className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <BigGoalButton tone="light" onClick={() => setPicker({ team: lightTeam, type: "goal" })} />
-        <BigGoalButton tone="dark" onClick={() => setPicker({ team: darkTeam, type: "goal" })} />
+        <BigEventButton
+          tone="light"
+          icon="⚽"
+          label="Gol"
+          height="h-28"
+          onClick={() => setPicker({ team: lightTeam, type: "goal" })}
+        />
+        <BigEventButton
+          tone="dark"
+          icon="⚽"
+          label="Gol"
+          height="h-28"
+          onClick={() => setPicker({ team: darkTeam, type: "goal" })}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <BigEventButton
+          tone="light"
+          icon="🧤"
+          label="Defesa"
+          height="h-20"
+          onClick={() => setPicker({ team: lightTeam, type: "save" })}
+        />
+        <BigEventButton
+          tone="dark"
+          icon="🧤"
+          label="Defesa"
+          height="h-20"
+          onClick={() => setPicker({ team: darkTeam, type: "save" })}
+        />
+        <BigEventButton
+          tone="light"
+          icon="🛡"
+          label="Desarme"
+          height="h-20"
+          onClick={() => setPicker({ team: lightTeam, type: "tackle" })}
+        />
+        <BigEventButton
+          tone="dark"
+          icon="🛡"
+          label="Desarme"
+          height="h-20"
+          onClick={() => setPicker({ team: darkTeam, type: "tackle" })}
+        />
       </div>
 
       <details className="overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]">
@@ -92,6 +135,10 @@ export function RefereePanel({
         </div>
       </details>
 
+      <p className="rounded-2xl border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 py-2 text-center text-[11px] text-[color:var(--color-ink-muted)]">
+        Notas (0–10) e ajustes finos ficam na tela <strong>Scout</strong> após encerrar a partida.
+      </p>
+
       <PlayerPickerSheet
         slug={slug}
         matchId={matchId}
@@ -106,7 +153,19 @@ export function RefereePanel({
   );
 }
 
-function BigGoalButton({ tone, onClick }: { tone: "light" | "dark"; onClick: () => void }) {
+function BigEventButton({
+  tone,
+  icon,
+  label,
+  height,
+  onClick,
+}: {
+  tone: "light" | "dark";
+  icon: string;
+  label: string;
+  height: string;
+  onClick: () => void;
+}) {
   const isLight = tone === "light";
   const cls = isLight
     ? "bg-[color:var(--color-team-light)] text-[color:var(--color-team-light-ink)]"
@@ -115,12 +174,14 @@ function BigGoalButton({ tone, onClick }: { tone: "light" | "dark"; onClick: () 
     <button
       type="button"
       onClick={onClick}
-      className={`relative flex h-28 flex-col items-center justify-center gap-1 overflow-hidden rounded-3xl text-base font-extrabold uppercase tracking-[0.1em] shadow-[var(--shadow-md)] transition-transform active:scale-[0.97] ${cls}`}
+      className={`relative flex ${height} flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl text-xs font-extrabold uppercase tracking-[0.1em] shadow-[var(--shadow-md)] transition-transform active:scale-[0.97] ${cls}`}
     >
-      <span aria-hidden="true" className="text-4xl drop-shadow-sm">
-        ⚽
+      <span aria-hidden="true" className="text-3xl drop-shadow-sm">
+        {icon}
       </span>
-      <span>Gol {isLight ? "Claro" : "Escuro"}</span>
+      <span>
+        {label} {isLight ? "Claro" : "Escuro"}
+      </span>
     </button>
   );
 }
