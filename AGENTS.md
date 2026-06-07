@@ -188,6 +188,10 @@ Validação humana só **no final de cada bloco** (visual + smoke test).
 
 - **Seed dev** (`pnpm db:seed`) — cria `seed-cornetas` com 12 jogadores fictícios + 1 partida com lista aberta (9 confirmados). Idempotente: limpa a pelada anterior antes. Requer `SEED_ADMIN_EMAIL=voce@gmail.com`.
 - **Destaques da partida** — agregação de artilheiros/assists/cartões por partida no card `finished`.
+- **Scout estilo Cartola FC** (3 commits):
+  1. Schema: novos `MatchEventType` (`save`, `tackle`), tabela `playerRating` (0–10), `peladaRules.eventPoints` configurável. Domínio puro em `lib/domain/scout.ts` (`DEFAULT_EVENT_POINTS`, `computePoints`, `aggregateCounts`) e `lib/domain/player-rating.ts`. Migration `0002_chunky_quicksilver`. 23 novos testes.
+  2. Captura: botões "+ Defesa" e "+ Desarme" ao vivo no referee panel + nova página `/p/[slug]/m/[matchId]/scout` (admin/referee) com counters por evento + slider 0–10 + comentário. Ação `saveMatchScoutAction` faz delete+reinsert atômico dos events da partida e upsert dos ratings.
+  3. Exibição: ranking refeito por **pontos** (Cartola-style) com nota média e colunas detalhadas (gols/assists/defesas/desarmes/cartões); `MatchHighlights` mostra "Pontuação" como primeira seção; nova página `/p/[slug]/configuracoes` (admin) pra editar pesos por evento; atalho "Configurações" no dashboard admin.
 
 ## 📦 Estado do Git
 

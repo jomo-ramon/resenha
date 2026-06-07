@@ -8,7 +8,9 @@
 
 import { Avatar, Badge, LiveBadge } from "@/components/ui";
 import type { Match, MatchEventType } from "@/lib/db/schema";
+import type { PeladaRules } from "@/lib/db/schema/peladas";
 import { computeScore, MATCH_EVENT_LABELS } from "@/lib/domain/match-event";
+import { aggregateCounts } from "@/lib/domain/scout";
 import { TEAM_DARK, TEAM_LIGHT } from "@/lib/domain/team-draft";
 import type { MatchEventRow, TeamWithPlayers } from "@/server/queries/matches";
 
@@ -284,20 +286,39 @@ function eventEmoji(type: string): string {
  */
 export function MatchHighlights({
   events,
+  rules,
   rosterLookup,
   teamLookup,
 }: {
   events: MatchEventRow[];
+  rules: PeladaRules | null;
   rosterLookup: DisplayLookup;
   teamLookup: DisplayLookup;
 }) {
   if (events.length === 0) return null;
 
+  const counts = aggregateCounts(
+    events.map((e) => ({ membershipId: e.membershipId, type: e.type })),
+    rules,
+  );
+  const teamByPlayer = new Map<string, string>();
+  for (const e of events) teamByPlayer.set(e.membershipId, e.teamId);
+
+  const pointsRows = Array.from(counts.entries())
+    .map(([membershipId, c]) => ({
+      membershipId,
+      teamId: teamByPlayer.get(membershipId) ?? "",
+      count: c.totalPoints,
+    }))
+    .filter((r) => r.count !== 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   const scorers = aggregateBy(events, ["goal", "own_goal"]);
   const assisters = aggregateBy(events, ["assist"]);
   const carded = aggregateBy(events, ["yellow_card", "red_card"]);
 
-  const hasAny = scorers.length + assisters.length + carded.length > 0;
+  const hasAny = pointsRows.length + scorers.length + assisters.length + carded.length > 0;
   if (!hasAny) return null;
 
   return (
@@ -307,6 +328,16 @@ export function MatchHighlights({
       </h2>
       <div className="space-y-3 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-4">
         <HighlightRow
+          label="Pontuação"
+          icon="⭐"
+          rows={pointsRows}
+          rosterLookup={rosterLookup}
+          teamLookup={teamLookup}
+          unit="pt"
+          unitPlural="pts"
+          tone="brand"
+        />
+        <HighlightRow
           label="Artilheiros"
           icon="⚽"
           rows={scorers}
@@ -314,7 +345,7 @@ export function MatchHighlights({
           teamLookup={teamLookup}
           unit="gol"
           unitPlural="gols"
-          tone="brand"
+          tone="info"
         />
         <HighlightRow
           label="Assistências"

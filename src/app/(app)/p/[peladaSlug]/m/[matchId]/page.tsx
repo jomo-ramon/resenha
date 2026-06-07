@@ -209,7 +209,12 @@ export default async function MatchPage({ params }: { params: Params }) {
 
       {match.status === "finished" && (
         <>
-          <MatchHighlights events={events} rosterLookup={rosterLookup} teamLookup={teamLookup} />
+          <MatchHighlights
+            events={events}
+            rules={ctx.pelada.rules}
+            rosterLookup={rosterLookup}
+            teamLookup={teamLookup}
+          />
           <MatchEventsTimeline
             events={events}
             rosterLookup={rosterLookup}

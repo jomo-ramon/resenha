@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { Avatar, Badge, EmptyState } from "@/components/ui";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
-import { getTopScorers } from "@/server/queries/ranking";
+import { getRanking, type RankingRow } from "@/server/queries/ranking";
 
 type Params = Promise<{ peladaSlug: string }>;
 
@@ -24,7 +24,7 @@ export default async function RankingPage({ params }: { params: Params }) {
     throw error;
   }
 
-  const ranking = await getTopScorers(ctx.pelada.id, 50);
+  const ranking = await getRanking(ctx.pelada.id, ctx.pelada.rules, 50);
   const meRow = ranking.find((r) => r.membershipId === ctx.membership.id);
   const mePosition = meRow ? ranking.indexOf(meRow) + 1 : null;
 
@@ -41,9 +41,10 @@ export default async function RankingPage({ params }: { params: Params }) {
         <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
           {ctx.pelada.name}
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight">🏆 Artilharia</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">🏆 Ranking</h1>
         <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
-          Soma de gols, assistências e cartões nas partidas encerradas.
+          Pontuação por desempenho (scout) somada em todas as partidas encerradas. Notas e pesos são
+          ajustados pelo admin em <strong>Configurações</strong>.
         </p>
       </header>
 
@@ -51,7 +52,7 @@ export default async function RankingPage({ params }: { params: Params }) {
         <EmptyState
           icon={<span aria-hidden="true">🏟️</span>}
           title="Ranking vazio"
-          description="Quando a primeira partida for encerrada com gols registrados, ele aparece aqui."
+          description="Quando a primeira partida for encerrada com scout registrado, ele aparece aqui."
         />
       ) : (
         <>
@@ -59,25 +60,37 @@ export default async function RankingPage({ params }: { params: Params }) {
             <PodiumTop3 rows={ranking.slice(0, 3)} meId={ctx.membership.id} />
           )}
 
-          <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] shadow-[var(--shadow-sm)]">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] shadow-[var(--shadow-sm)]">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-[color:var(--color-surface-muted)] text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
                 <tr>
                   <th className="px-3 py-3 w-12 text-center">#</th>
                   <th className="px-3 py-3">Jogador</th>
-                  <th className="px-3 py-3 text-center" title="Gols">
+                  <th className="px-2 py-3 text-center" title="Pontos totais">
+                    PTS
+                  </th>
+                  <th className="px-2 py-3 text-center" title="Nota média do juiz">
+                    ★
+                  </th>
+                  <th className="px-2 py-3 text-center" title="Gols">
                     ⚽
                   </th>
-                  <th className="px-3 py-3 text-center" title="Assistências">
-                    🅰️
+                  <th className="px-2 py-3 text-center" title="Assistências">
+                    🅰
                   </th>
-                  <th className="px-3 py-3 text-center" title="Cartões amarelos">
+                  <th className="px-2 py-3 text-center" title="Defesas difíceis">
+                    🧤
+                  </th>
+                  <th className="px-2 py-3 text-center" title="Desarmes">
+                    🛡
+                  </th>
+                  <th className="px-2 py-3 text-center" title="Cartões amarelos">
                     🟨
                   </th>
-                  <th className="px-3 py-3 text-center" title="Cartões vermelhos">
+                  <th className="px-2 py-3 text-center" title="Cartões vermelhos">
                     🟥
                   </th>
-                  <th className="px-3 py-3 text-center" title="Partidas">
+                  <th className="px-2 py-3 text-center" title="Partidas">
                     J
                   </th>
                 </tr>
@@ -116,21 +129,27 @@ export default async function RankingPage({ params }: { params: Params }) {
                           )}
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-center text-base font-extrabold tabular-nums text-[color:var(--color-brand-strong)]">
-                        {row.goals}
+                      <td className="px-2 py-3 text-center text-base font-extrabold tabular-nums text-[color:var(--color-brand)]">
+                        {row.points}
                       </td>
-                      <td className="px-3 py-3 text-center tabular-nums text-[color:var(--color-ink-soft)]">
-                        {row.assists || ""}
+                      <td className="px-2 py-3 text-center tabular-nums text-[color:var(--color-ink-soft)]">
+                        {row.averageRating !== null ? (
+                          <span
+                            title={`${row.ratingCount} nota${row.ratingCount === 1 ? "" : "s"}`}
+                          >
+                            {row.averageRating.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="opacity-30">—</span>
+                        )}
                       </td>
-                      <td className="px-3 py-3 text-center tabular-nums text-[color:var(--color-ink-soft)]">
-                        {row.yellowCards || ""}
-                      </td>
-                      <td className="px-3 py-3 text-center tabular-nums text-[color:var(--color-ink-soft)]">
-                        {row.redCards || ""}
-                      </td>
-                      <td className="px-3 py-3 text-center tabular-nums text-[color:var(--color-ink-muted)]">
-                        {row.matchesPlayed}
-                      </td>
+                      <Cell value={row.goals} accent="brand-strong" />
+                      <Cell value={row.assists} />
+                      <Cell value={row.saves} />
+                      <Cell value={row.tackles} />
+                      <Cell value={row.yellowCards} />
+                      <Cell value={row.redCards} />
+                      <Cell value={row.matchesPlayed} muted />
                     </tr>
                   );
                 })}
@@ -144,7 +163,8 @@ export default async function RankingPage({ params }: { params: Params }) {
                 Você
               </p>
               <p className="mt-1 text-sm text-[color:var(--color-brand-ink)]">
-                📍 {mePosition}º lugar · <span className="font-bold">{meRow.goals}</span> gols
+                📍 {mePosition}º lugar · <span className="font-bold">{meRow.points}</span> pontos ·{" "}
+                {meRow.goals} gol{meRow.goals === 1 ? "" : "s"}
               </p>
             </div>
           )}
@@ -154,13 +174,28 @@ export default async function RankingPage({ params }: { params: Params }) {
   );
 }
 
-function PodiumTop3({
-  rows,
-  meId,
+function Cell({
+  value,
+  accent,
+  muted,
 }: {
-  rows: Array<{ membershipId: string; displayName: string; goals: number }>;
-  meId: string;
+  value: number;
+  accent?: "brand-strong";
+  muted?: boolean;
 }) {
+  if (value === 0) {
+    return <td className="px-2 py-3 text-center tabular-nums opacity-30">—</td>;
+  }
+  const cls =
+    accent === "brand-strong"
+      ? "text-[color:var(--color-brand-strong)] font-extrabold"
+      : muted
+        ? "text-[color:var(--color-ink-muted)]"
+        : "text-[color:var(--color-ink-soft)]";
+  return <td className={`px-2 py-3 text-center tabular-nums ${cls}`}>{value}</td>;
+}
+
+function PodiumTop3({ rows, meId }: { rows: RankingRow[]; meId: string }) {
   const [first, second, third] = rows;
   if (!first || !second || !third) return null;
 
@@ -201,7 +236,7 @@ function PodiumCard({
   highlight,
 }: {
   place: number;
-  row: { displayName: string; goals: number };
+  row: RankingRow;
   isMe: boolean;
   height: string;
   emoji: string;
@@ -221,11 +256,11 @@ function PodiumCard({
             : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-ink)]"
         }`}
       >
-        <span className="text-3xl font-extrabold tabular-nums">{row.goals}</span>
+        <span className="text-3xl font-extrabold tabular-nums">{row.points}</span>
         <span
           className={`text-[10px] font-bold uppercase tracking-wider ${highlight ? "text-white/85" : "text-[color:var(--color-ink-muted)]"}`}
         >
-          {place}º · gols
+          {place}º · pts
         </span>
       </div>
     </div>
