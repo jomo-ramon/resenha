@@ -1,91 +1,124 @@
 @import "tailwindcss";
 
 /**
- * resenha design tokens
+ * resenha — design tokens
  * ---
- * Brand identity: pelada (street football) — vivid pitch green + warm
- * neutrals + functional yellow/red cards.
- *
- * Surfaces are intentionally warm (stone, not zinc) so the green pops.
+ * Direction: stadium-at-night. Dark-first (Cartola-style), neon Brazil
+ * green as brand, amber accent for captains/medals, tabular numbers
+ * everywhere a stat shows up. Light mode is preserved as a graceful
+ * fallback for users that explicitly prefer it via OS.
  */
 
 :root {
-  /* warm neutrals (stone family) */
-  --color-surface: #fafaf9;
-  --color-surface-raised: #ffffff;
-  --color-surface-muted: #f5f5f4;
-  --color-ink: #1c1917;
-  --color-ink-soft: #57534e;
-  --color-ink-muted: #a8a29e;
-  --color-border: #e7e5e4;
-  --color-border-strong: #d6d3d1;
+  /* surfaces (dark-first) — layered grays with subtle blue undertone */
+  --color-surface: #0a0b0d;
+  --color-surface-raised: #13151a;
+  --color-surface-muted: #1c1f26;
+  --color-surface-overlay: #232730;
 
-  /* brand: pitch green */
-  --color-brand: #16a34a;
-  --color-brand-strong: #15803d;
-  --color-brand-soft: #dcfce7;
-  --color-brand-ink: #052e16;
+  /* ink (light-on-dark) */
+  --color-ink: #fafafa;
+  --color-ink-soft: #d4d4d8;
+  --color-ink-muted: #71717a;
+  --color-ink-faint: #52525b;
+
+  /* borders & dividers */
+  --color-border: #27272a;
+  --color-border-strong: #3f3f46;
+
+  /* brand: neon Brazil green */
+  --color-brand: #00ffa1;
+  --color-brand-strong: #00cc80;
+  --color-brand-soft: rgba(0, 255, 161, 0.12);
+  --color-brand-glow: rgba(0, 255, 161, 0.25);
+  --color-brand-ink: #002e1c;
+
+  /* accent: stadium-yellow */
+  --color-accent: #facc15;
+  --color-accent-soft: rgba(250, 204, 21, 0.14);
+  --color-accent-ink: #422006;
 
   /* functional */
-  --color-warning: #f59e0b;
-  --color-warning-soft: #fef3c7;
-  --color-danger: #dc2626;
-  --color-danger-soft: #fee2e2;
-  --color-card-yellow: #fbbf24;
-  --color-card-red: #ef4444;
-  --color-captain: #f59e0b;
-  --color-medal-gold: #eab308;
-  --color-medal-silver: #94a3b8;
-  --color-medal-bronze: #b45309;
+  --color-warning: #fb923c;
+  --color-warning-soft: rgba(251, 146, 60, 0.14);
+  --color-danger: #f87171;
+  --color-danger-soft: rgba(248, 113, 113, 0.14);
+  --color-info: #60a5fa;
+  --color-info-soft: rgba(96, 165, 250, 0.14);
 
-  /* team colors (light/dark match draft) */
-  --color-team-light: #fafaf9;
-  --color-team-light-ink: #1c1917;
-  --color-team-dark: #18181b;
-  --color-team-dark-ink: #fafaf9;
+  /* match-specific */
+  --color-card-yellow: #facc15;
+  --color-card-red: #f87171;
+  --color-captain: #facc15;
+  --color-medal-gold: #fbbf24;
+  --color-medal-silver: #cbd5e1;
+  --color-medal-bronze: #d97706;
 
-  /* radii — bold rounded for cartola feel */
+  /* team-colors (chips/pellets used in match UI) */
+  --color-team-light: #f5f5f4;
+  --color-team-light-ink: #18181b;
+  --color-team-dark: #0a0b0d;
+  --color-team-dark-ink: #fafafa;
+
+  /* radii — soft but punchy */
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
-  --radius-full: 9999px;
+  --radius-3xl: 2rem;
 
-  /* shadows — soft, layered */
-  --shadow-sm: 0 1px 2px 0 rgb(28 25 23 / 0.06);
-  --shadow-md: 0 4px 12px -2px rgb(28 25 23 / 0.08), 0 2px 4px -2px rgb(28 25 23 / 0.04);
-  --shadow-lg: 0 12px 28px -8px rgb(28 25 23 / 0.18), 0 4px 8px -4px rgb(28 25 23 / 0.06);
-  --shadow-brand: 0 8px 24px -8px rgb(22 163 74 / 0.45);
+  /* shadows — neon glow on brand elements */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-md: 0 6px 16px -4px rgb(0 0 0 / 0.55), 0 2px 4px -2px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 16px 36px -10px rgb(0 0 0 / 0.7), 0 4px 8px -4px rgb(0 0 0 / 0.45);
+  --shadow-brand: 0 6px 24px -6px rgba(0, 255, 161, 0.45);
+  --shadow-accent: 0 6px 24px -6px rgba(250, 204, 21, 0.45);
 }
 
-@media (prefers-color-scheme: dark) {
+/* light mode opt-in only when user explicitly prefers it */
+@media (prefers-color-scheme: light) {
   :root {
-    --color-surface: #0c0a09;
-    --color-surface-raised: #1c1917;
-    --color-surface-muted: #1c1917;
-    --color-ink: #fafaf9;
-    --color-ink-soft: #d6d3d1;
-    --color-ink-muted: #78716c;
-    --color-border: #292524;
-    --color-border-strong: #44403c;
+    --color-surface: #fafaf9;
+    --color-surface-raised: #ffffff;
+    --color-surface-muted: #f5f5f4;
+    --color-surface-overlay: #ffffff;
 
-    --color-brand: #22c55e;
-    --color-brand-strong: #16a34a;
-    --color-brand-soft: #14532d;
-    --color-brand-ink: #dcfce7;
+    --color-ink: #1c1917;
+    --color-ink-soft: #57534e;
+    --color-ink-muted: #a8a29e;
+    --color-ink-faint: #d6d3d1;
 
-    --color-warning-soft: #422006;
-    --color-danger-soft: #450a0a;
+    --color-border: #e7e5e4;
+    --color-border-strong: #d6d3d1;
+
+    --color-brand: #16a34a;
+    --color-brand-strong: #15803d;
+    --color-brand-soft: rgba(22, 163, 74, 0.12);
+    --color-brand-glow: rgba(22, 163, 74, 0.3);
+    --color-brand-ink: #052e16;
+
+    --color-accent: #d97706;
+    --color-accent-soft: rgba(217, 119, 6, 0.12);
+    --color-accent-ink: #422006;
+
+    --color-warning: #d97706;
+    --color-warning-soft: rgba(217, 119, 6, 0.12);
+    --color-danger: #dc2626;
+    --color-danger-soft: rgba(220, 38, 38, 0.12);
+    --color-info: #2563eb;
+    --color-info-soft: rgba(37, 99, 235, 0.12);
 
     --color-team-light: #fafaf9;
-    --color-team-light-ink: #1c1917;
-    --color-team-dark: #0c0a09;
+    --color-team-light-ink: #18181b;
+    --color-team-dark: #18181b;
     --color-team-dark-ink: #fafaf9;
 
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-    --shadow-lg: 0 12px 28px -8px rgb(0 0 0 / 0.6), 0 4px 8px -4px rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 2px 0 rgb(28 25 23 / 0.06);
+    --shadow-md: 0 4px 12px -2px rgb(28 25 23 / 0.1), 0 2px 4px -2px rgb(28 25 23 / 0.05);
+    --shadow-lg: 0 12px 28px -8px rgb(28 25 23 / 0.18);
+    --shadow-brand: 0 8px 24px -8px rgba(22, 163, 74, 0.45);
+    --shadow-accent: 0 8px 24px -8px rgba(217, 119, 6, 0.45);
   }
 }
 
@@ -95,19 +128,27 @@
   --color-surface: var(--color-surface);
   --color-surface-raised: var(--color-surface-raised);
   --color-surface-muted: var(--color-surface-muted);
+  --color-surface-overlay: var(--color-surface-overlay);
   --color-ink: var(--color-ink);
   --color-ink-soft: var(--color-ink-soft);
   --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
   --color-border: var(--color-border);
   --color-border-strong: var(--color-border-strong);
   --color-brand: var(--color-brand);
   --color-brand-strong: var(--color-brand-strong);
   --color-brand-soft: var(--color-brand-soft);
+  --color-brand-glow: var(--color-brand-glow);
   --color-brand-ink: var(--color-brand-ink);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-accent-ink: var(--color-accent-ink);
   --color-warning: var(--color-warning);
   --color-warning-soft: var(--color-warning-soft);
   --color-danger: var(--color-danger);
   --color-danger-soft: var(--color-danger-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
   --color-captain: var(--color-captain);
   --color-medal-gold: var(--color-medal-gold);
   --color-medal-silver: var(--color-medal-silver);
@@ -124,11 +165,13 @@
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 }
 
 html {
   background: var(--color-surface);
   color: var(--color-ink);
+  color-scheme: dark light;
   font-family:
     var(--font-geist-sans),
     system-ui,
@@ -144,28 +187,72 @@ body {
   background: var(--color-surface);
   color: var(--color-ink);
   font-family: inherit;
+  /* radial spotlight behind content — gives the stadium vibe without
+     an image */
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgba(0, 255, 161, 0.08),
+    transparent 60%
+  );
+  background-attachment: fixed;
 }
 
-/* subtle pitch pattern available on demand via .bg-pitch */
+/* utility: tabular numbers (used on every score/stat) */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* subtle pitch pattern (vertical stripes) for hero backgrounds */
 .bg-pitch {
-  background-color: var(--color-brand);
+  background-color: var(--color-brand-strong);
   background-image: repeating-linear-gradient(
     0deg,
     transparent 0,
     transparent 28px,
-    rgb(255 255 255 / 0.04) 28px,
-    rgb(255 255 255 / 0.04) 29px
+    rgb(255 255 255 / 0.05) 28px,
+    rgb(255 255 255 / 0.05) 29px
   );
 }
 
-/* spotlight gradient used in hero / score cards */
+/* brand gradient — used in hero CTAs and the score pedestal */
 .bg-brand-gradient {
-  background: linear-gradient(135deg, var(--color-brand-strong) 0%, #047857 100%);
+  background: linear-gradient(135deg, #00cc80 0%, #00805a 100%);
 }
 
-/* utility: tabular numbers for scores/rankings */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+/* neon ring used on avatars and small focus glows */
+.ring-brand-glow {
+  box-shadow:
+    0 0 0 2px var(--color-brand),
+    0 0 12px var(--color-brand-glow);
+}
+
+/* sheet/modal entrance animations */
+@keyframes sheet-up {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-sheet {
+  animation: sheet-up 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade {
+  animation: fade-in 180ms ease-out both;
 }
 
 /* respect users that prefer less motion */

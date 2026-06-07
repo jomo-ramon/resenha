@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Badge, EmptyState } from "@/components/ui";
+import { Avatar, Badge, EmptyState } from "@/components/ui";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
 import { getTopScorers } from "@/server/queries/ranking";
@@ -95,15 +95,20 @@ export default async function RankingPage({ params }: { params: Params }) {
                         {medal ?? i + 1}
                       </td>
                       <td className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className={isMe ? "font-bold" : "font-medium"}>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar
+                            name={row.displayName}
+                            shirtNumber={row.shirtNumber}
+                            size="sm"
+                            tone={isMe ? "brand" : "default"}
+                          />
+                          <span
+                            className={
+                              isMe ? "font-extrabold text-[color:var(--color-brand)]" : "font-bold"
+                            }
+                          >
                             {row.displayName}
                           </span>
-                          {row.shirtNumber !== null && (
-                            <span className="text-xs text-[color:var(--color-ink-muted)]">
-                              #{row.shirtNumber}
-                            </span>
-                          )}
                           {isMe && (
                             <Badge tone="brand" size="xs">
                               Você

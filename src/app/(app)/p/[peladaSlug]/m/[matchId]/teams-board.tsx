@@ -1,8 +1,12 @@
 /**
  * Server component that renders the live score and the rosters of both
  * teams. Used in `teams_drafted`, `in_progress`, and `finished`.
+ *
+ * Designed Cartola-style: massive score (8xl mobile), team chips show
+ * Avatar + shirtNumber + name + per-player goal counter inline.
  */
 
+import { Avatar, Badge, LiveBadge } from "@/components/ui";
 import type { Match } from "@/lib/db/schema";
 import { computeScore, MATCH_EVENT_LABELS } from "@/lib/domain/match-event";
 import { TEAM_DARK, TEAM_LIGHT } from "@/lib/domain/team-draft";
@@ -31,39 +35,36 @@ export function TeamsBoard({
     ? { light: lightTeam.team.finalScore ?? 0, dark: darkTeam.team.finalScore ?? 0 }
     : computeScore(events, lightTeam.team.id, darkTeam.team.id);
 
+  const winner: "light" | "dark" | "draw" | null = isFinished
+    ? score.light === score.dark
+      ? "draw"
+      : score.light > score.dark
+        ? "light"
+        : "dark"
+    : null;
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       <div className="overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] shadow-[var(--shadow-md)]">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
-          <ScorePane
-            label="Time Claro"
-            score={score.light}
-            tone="light"
-            winning={score.light > score.dark && isFinished}
-          />
-          <div className="flex flex-col items-center justify-center bg-[color:var(--color-surface)] px-4 py-6">
-            <span className="text-2xl font-bold text-[color:var(--color-ink-muted)]">×</span>
-            {isLive && (
-              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[color:var(--color-brand)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
-                </span>
-                Ao vivo
-              </span>
-            )}
-            {isFinished && (
-              <span className="mt-2 text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
-                Final
-              </span>
-            )}
-          </div>
-          <ScorePane
-            label="Time Escuro"
-            score={score.dark}
-            tone="dark"
-            winning={score.dark > score.light && isFinished}
-          />
+        {/* status strip */}
+        <div className="flex items-center justify-center gap-2 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2">
+          {isLive && <LiveBadge />}
+          {isFinished && (
+            <Badge tone="neutral" size="sm">
+              {winner === "draw" ? "Empate" : "Final"}
+            </Badge>
+          )}
+          {!isLive && !isFinished && (
+            <Badge tone="info" size="sm">
+              Times sorteados
+            </Badge>
+          )}
+        </div>
+
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-7 sm:px-6">
+          <ScoreSide label="Claro" score={score.light} tone="light" isWinner={winner === "light"} />
+          <span className="text-3xl font-extrabold text-[color:var(--color-ink-muted)]">×</span>
+          <ScoreSide label="Escuro" score={score.dark} tone="dark" isWinner={winner === "dark"} />
         </div>
       </div>
 
@@ -75,29 +76,42 @@ export function TeamsBoard({
   );
 }
 
-function ScorePane({
+function ScoreSide({
   label,
   score,
   tone,
-  winning,
+  isWinner,
 }: {
   label: string;
   score: number;
   tone: "light" | "dark";
-  winning?: boolean;
+  isWinner?: boolean;
 }) {
-  const isLight = tone === "light";
-  const bg = isLight
-    ? "bg-[color:var(--color-team-light)] text-[color:var(--color-team-light-ink)]"
-    : "bg-[color:var(--color-team-dark)] text-[color:var(--color-team-dark-ink)]";
   return (
-    <div className={`flex flex-col items-center justify-center gap-2 px-4 py-7 ${bg}`}>
-      <p className="text-[10px] font-bold uppercase tracking-wider opacity-70">{label}</p>
-      <p className={`text-6xl font-extrabold tabular-nums sm:text-7xl ${winning ? "" : ""}`}>
+    <div className="flex flex-col items-center gap-1.5">
+      <span
+        className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[10px] font-bold uppercase tracking-[0.15em] ${
+          tone === "light"
+            ? "bg-[color:var(--color-team-light)] text-[color:var(--color-team-light-ink)]"
+            : "bg-[color:var(--color-team-dark)] text-[color:var(--color-team-dark-ink)] ring-1 ring-[color:var(--color-border-strong)]"
+        }`}
+      >
+        <span
+          className={`h-2 w-2 rounded-full ${tone === "light" ? "bg-[color:var(--color-team-light-ink)]" : "bg-[color:var(--color-team-dark-ink)]"}`}
+        />
+        Time {label}
+      </span>
+      <span
+        className={`text-7xl font-extrabold tabular-nums leading-none tracking-tighter sm:text-8xl ${
+          isWinner ? "text-[color:var(--color-brand)]" : "text-[color:var(--color-ink)]"
+        }`}
+      >
         {score}
-      </p>
-      {winning && (
-        <span className="text-xs font-bold uppercase tracking-wider opacity-90">🏆 Venceu</span>
+      </span>
+      {isWinner && (
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-brand)]">
+          🏆 Vencedor
+        </span>
       )}
     </div>
   );
@@ -114,10 +128,10 @@ function TeamRoster({
   rosterLookup: DisplayLookup;
   events: MatchEventRow[];
 }) {
-  const headerClass =
+  const headerStyle =
     tone === "light"
       ? "bg-[color:var(--color-team-light)] text-[color:var(--color-team-light-ink)]"
-      : "bg-[color:var(--color-team-dark)] text-[color:var(--color-team-dark-ink)]";
+      : "bg-[color:var(--color-team-dark)] text-[color:var(--color-team-dark-ink)] ring-1 ring-[color:var(--color-border-strong)]";
 
   const eventsByMember = new Map<string, MatchEventRow[]>();
   for (const e of events.filter((e) => e.teamId === team.team.id)) {
@@ -128,41 +142,59 @@ function TeamRoster({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)]">
-      <header className={`flex items-center gap-2 px-4 py-3 ${headerClass}`}>
-        <span
-          className="inline-block h-3 w-3 rounded-full"
-          style={{ backgroundColor: team.team.color ?? undefined }}
-        />
-        <h2 className="text-sm font-bold uppercase tracking-wider">{team.team.name}</h2>
-        <span className="ml-auto text-xs opacity-70">{team.playerMembershipIds.length}</span>
+      <header className={`flex items-center gap-2 px-4 py-3 ${headerStyle}`}>
+        <span className="h-3 w-3 rounded-full bg-current opacity-70" />
+        <h2 className="text-xs font-extrabold uppercase tracking-[0.18em]">{team.team.name}</h2>
+        <span className="ml-auto rounded-full bg-black/15 px-2 py-0.5 text-[10px] font-bold tabular-nums">
+          {team.playerMembershipIds.length}
+        </span>
       </header>
       <ul className="divide-y divide-[color:var(--color-border)]">
         {team.playerMembershipIds.map((mid) => {
           const playerEvents = eventsByMember.get(mid) ?? [];
           const goals = playerEvents.filter((e) => e.type === "goal").length;
+          const assists = playerEvents.filter((e) => e.type === "assist").length;
           const yellows = playerEvents.filter((e) => e.type === "yellow_card").length;
           const reds = playerEvents.filter((e) => e.type === "red_card").length;
           const isCaptain = team.team.captainMembershipId === mid;
+          const name = rosterLookup.get(mid) ?? "—";
           return (
-            <li key={mid} className="flex items-center justify-between gap-2 px-4 py-2.5">
-              <span className="flex min-w-0 items-center gap-2">
+            <li key={mid} className="flex items-center gap-3 px-4 py-2.5">
+              <Avatar name={name} size="sm" tone={tone === "light" ? "team-light" : "team-dark"} />
+              <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                <span className="truncate text-sm font-bold text-[color:var(--color-ink)]">
+                  {name}
+                </span>
                 {isCaptain && (
-                  <span className="shrink-0 rounded-full bg-[color:var(--color-captain)] px-1.5 text-[10px] font-bold text-white">
+                  <span
+                    title="Capitão"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[color:var(--color-accent)] text-[9px] font-extrabold text-[color:var(--color-accent-ink)]"
+                  >
                     C
                   </span>
                 )}
-                <span className="truncate text-sm font-medium text-[color:var(--color-ink)]">
-                  {rosterLookup.get(mid) ?? "—"}
-                </span>
               </span>
-              <span className="flex items-center gap-2 text-xs">
+              <span className="flex items-center gap-1.5 text-xs">
                 {goals > 0 && (
-                  <span className="font-bold text-[color:var(--color-brand-strong)]">
+                  <span className="inline-flex items-center gap-0.5 rounded-md bg-[color:var(--color-brand-soft)] px-1.5 py-0.5 font-extrabold tabular-nums text-[color:var(--color-brand)]">
                     ⚽ {goals}
                   </span>
                 )}
-                {yellows > 0 && <span>🟨{yellows > 1 ? yellows : ""}</span>}
-                {reds > 0 && <span>🟥{reds > 1 ? reds : ""}</span>}
+                {assists > 0 && (
+                  <span className="inline-flex items-center gap-0.5 rounded-md bg-[color:var(--color-info-soft)] px-1.5 py-0.5 font-extrabold tabular-nums text-[color:var(--color-info)]">
+                    🅰 {assists}
+                  </span>
+                )}
+                {yellows > 0 && (
+                  <span title={`${yellows} amarelo${yellows > 1 ? "s" : ""}`}>
+                    🟨{yellows > 1 ? yellows : ""}
+                  </span>
+                )}
+                {reds > 0 && (
+                  <span title={`${reds} vermelho${reds > 1 ? "s" : ""}`}>
+                    🟥{reds > 1 ? reds : ""}
+                  </span>
+                )}
               </span>
             </li>
           );
@@ -184,10 +216,10 @@ export function MatchEventsTimeline({
   if (events.length === 0) {
     return (
       <section>
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+        <h2 className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
           Eventos
         </h2>
-        <p className="rounded-xl border border-dashed border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-raised)] px-4 py-6 text-center text-sm text-[color:var(--color-ink-muted)]">
+        <p className="rounded-2xl border border-dashed border-[color:var(--color-border-strong)] bg-[color:var(--color-surface-raised)] px-4 py-6 text-center text-sm text-[color:var(--color-ink-muted)]">
           Nenhum evento registrado.
         </p>
       </section>
@@ -196,28 +228,33 @@ export function MatchEventsTimeline({
 
   return (
     <section>
-      <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+      <h2 className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
         Eventos ({events.length})
       </h2>
       <ol className="space-y-1.5">
-        {events.map((e) => (
-          <li
-            key={e.id}
-            className="flex items-center gap-3 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-3 py-2 text-sm"
-          >
-            <span className="w-8 shrink-0 text-right font-mono text-xs text-[color:var(--color-ink-muted)]">
-              {e.minute !== null ? `${e.minute}'` : "—"}
-            </span>
-            <span className="shrink-0 text-base">{eventEmoji(e.type)}</span>
-            <span className="flex-1 truncate">
-              <span className="font-semibold">{rosterLookup.get(e.membershipId) ?? "?"}</span>
-              <span className="text-[color:var(--color-ink-muted)]">
-                {" "}
-                · {teamLookup.get(e.teamId) ?? "?"} · {MATCH_EVENT_LABELS[e.type]}
+        {events.map((e) => {
+          const name = rosterLookup.get(e.membershipId) ?? "?";
+          const teamName = teamLookup.get(e.teamId) ?? "?";
+          return (
+            <li
+              key={e.id}
+              className="flex items-center gap-3 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] px-3 py-2.5 text-sm"
+            >
+              <span className="w-9 shrink-0 text-right font-mono text-xs font-bold text-[color:var(--color-ink-muted)] tabular-nums">
+                {e.minute !== null ? `${e.minute}'` : "—"}
               </span>
-            </span>
-          </li>
-        ))}
+              <span className="shrink-0 text-lg">{eventEmoji(e.type)}</span>
+              <Avatar name={name} size="xs" tone="default" />
+              <span className="flex-1 truncate">
+                <span className="font-bold">{name}</span>
+                <span className="text-[color:var(--color-ink-muted)]">
+                  {" "}
+                  · {teamName} · {MATCH_EVENT_LABELS[e.type]}
+                </span>
+              </span>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
@@ -230,7 +267,7 @@ function eventEmoji(type: string): string {
     case "own_goal":
       return "🙃";
     case "assist":
-      return "🅰️";
+      return "🅰";
     case "yellow_card":
       return "🟨";
     case "red_card":

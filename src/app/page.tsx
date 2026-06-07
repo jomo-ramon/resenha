@@ -41,36 +41,40 @@ export default async function HomePage() {
       </header>
 
       <main className="flex-1">
-        <section className="bg-pitch relative overflow-hidden text-white">
+        <section className="relative overflow-hidden border-b border-[color:var(--color-border)]">
           <div className="mx-auto max-w-5xl px-4 py-16 sm:py-24">
             <div className="max-w-xl space-y-6">
-              <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur">
-                <BallGlyph size={14} className="text-white" />A plataforma da sua pelada
+              <p className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand-soft)] px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[color:var(--color-brand)]">
+                <BallGlyph size={14} />A plataforma da sua pelada
               </p>
-              <h1 className="text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
-                Organiza a pelada sem WhatsApp e sem planilha.
+              <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+                Organiza a pelada{" "}
+                <span className="text-[color:var(--color-brand)]">
+                  sem WhatsApp e sem planilha.
+                </span>
               </h1>
-              <p className="text-lg text-white/85 sm:text-xl">
+              <p className="text-lg text-[color:var(--color-ink-soft)] sm:text-xl">
                 Lista de presença, sorteio de times, placar ao vivo e ranking de artilharia. Tudo
                 num lugar só.
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
-                <ButtonLink href="/entrar" variant="secondary" size="xl">
+                <ButtonLink href="/entrar" variant="primary" size="xl">
                   Entrar
                 </ButtonLink>
-                <ButtonLink
-                  href="/entrar"
-                  variant="outline"
-                  size="xl"
-                  className="border-white/40 bg-white/10 text-white hover:bg-white/20"
-                >
+                <ButtonLink href="/entrar" variant="outline" size="xl">
                   Criar minha pelada
                 </ButtonLink>
               </div>
             </div>
           </div>
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-32 -left-10 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[color:var(--color-brand)] opacity-25 blur-3xl"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-40 -left-10 h-80 w-80 rounded-full bg-[color:var(--color-accent)] opacity-10 blur-3xl"
+          />
         </section>
 
         <section className="mx-auto max-w-5xl px-4 py-12 sm:py-16">

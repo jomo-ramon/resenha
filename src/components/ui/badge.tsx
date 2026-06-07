@@ -7,17 +7,17 @@ type Size = "xs" | "sm" | "md";
 
 const tones: Record<Tone, string> = {
   neutral:
-    "bg-[color:var(--color-surface-muted)] text-[color:var(--color-ink-soft)] border border-[color:var(--color-border)]",
+    "bg-[color:var(--color-surface-overlay)] text-[color:var(--color-ink-soft)] border border-[color:var(--color-border)]",
   brand:
-    "bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand-ink)] border border-transparent",
+    "bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] border border-[color:var(--color-brand)]/30",
   warning:
-    "bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)] border border-transparent",
-  info: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-transparent",
+    "bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)] border border-[color:var(--color-warning)]/30",
+  info: "bg-[color:var(--color-info-soft)] text-[color:var(--color-info)] border border-[color:var(--color-info)]/30",
   danger:
-    "bg-[color:var(--color-danger-soft)] text-[color:var(--color-danger)] border border-transparent",
+    "bg-[color:var(--color-danger-soft)] text-[color:var(--color-danger)] border border-[color:var(--color-danger)]/30",
   captain:
-    "bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
-  live: "bg-[color:var(--color-brand)] text-white border border-transparent",
+    "bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent)] border border-[color:var(--color-accent)]/30",
+  live: "bg-[color:var(--color-brand)] text-[color:var(--color-brand-ink)] border border-transparent shadow-[var(--shadow-brand)]",
   muted:
     "bg-transparent text-[color:var(--color-ink-muted)] border border-[color:var(--color-border)]",
 };
@@ -55,12 +55,12 @@ export function Badge({
  */
 export function LiveBadge({ className }: { className?: string }) {
   return (
-    <Badge tone="live" size="sm" className={cn("gap-1.5", className)}>
+    <Badge tone="live" size="sm" className={cn("gap-1.5 uppercase tracking-wider", className)}>
       <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--color-brand-ink)] opacity-75" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--color-brand-ink)]" />
       </span>
-      AO VIVO
+      Ao vivo
     </Badge>
   );
 }

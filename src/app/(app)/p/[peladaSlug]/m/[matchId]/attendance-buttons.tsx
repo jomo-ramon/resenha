@@ -43,8 +43,9 @@ export function AttendanceButtons({
             <PrimaryButton>✓ Vou jogar</PrimaryButton>
           </form>
         ) : (
-          <div className="flex h-12 items-center justify-center rounded-full border border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand-soft)] text-sm font-bold text-[color:var(--color-brand-ink)]">
-            ✓ Confirmado
+          <div className="flex h-12 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-brand)]/40 bg-[color:var(--color-brand-soft)] text-sm font-extrabold text-[color:var(--color-brand)]">
+            <span aria-hidden="true">✓</span>
+            Confirmado
           </div>
         )}
 

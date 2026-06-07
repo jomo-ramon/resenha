@@ -1,9 +1,15 @@
 "use client";
 
 /**
- * BottomTabBar — mobile-first sticky nav for inside-a-pelada routes.
- * Hidden on screens >= md (the page header is enough at desktop).
+ * BottomTabBar — Cartola-style nav bar. 4 tabs with a brand-glow pill
+ * around the active item. Only renders inside a pelada (`/p/[slug]/...`)
+ * and only on screens < md.
+ *
+ * The active pill is a wider rounded surface with the brand color text
+ * and a soft glow, so the user can tell which tab they're on at a glance
+ * even when looking at the screen sideways under fluorescent gym lights.
  */
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -56,9 +62,9 @@ export function BottomTabBar() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="sticky bottom-0 z-20 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)]/95 backdrop-blur pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="sticky bottom-0 z-30 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
     >
-      <ul className="mx-auto flex max-w-5xl">
+      <ul className="mx-auto flex max-w-5xl items-center px-2 py-2">
         {tabs.map((tab) => {
           const active = tab.matches(pathname);
           return (
@@ -66,16 +72,27 @@ export function BottomTabBar() {
               <Link
                 href={tab.href}
                 className={cn(
-                  "flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors",
+                  "group relative flex flex-col items-center gap-0.5 rounded-2xl py-2 text-[10px] font-bold uppercase tracking-wider transition-all",
                   active
-                    ? "text-[color:var(--color-brand)]"
-                    : "text-[color:var(--color-ink-muted)] hover:text-[color:var(--color-ink-soft)]",
+                    ? "bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)]"
+                    : "text-[color:var(--color-ink-muted)] active:scale-95",
                 )}
               >
-                <span className={cn("h-6 w-6", active && "scale-110 transition-transform")}>
+                <span
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center transition-transform",
+                    active && "drop-shadow-[0_0_6px_var(--color-brand-glow)]",
+                  )}
+                >
                   {tab.icon}
                 </span>
                 <span>{tab.label}</span>
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-px left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[color:var(--color-brand)] shadow-[0_0_8px_var(--color-brand-glow)]"
+                  />
+                )}
               </Link>
             </li>
           );
@@ -93,7 +110,7 @@ function HomeIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -111,7 +128,7 @@ function CalendarIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -130,7 +147,7 @@ function TrophyIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -149,7 +166,7 @@ function UserIcon() {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

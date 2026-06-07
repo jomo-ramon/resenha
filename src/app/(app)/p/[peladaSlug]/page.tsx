@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Badge, BallGlyph, ButtonLink, Card, EmptyState, MatchStatusBadge } from "@/components/ui";
+import {
+  Avatar,
+  Badge,
+  ButtonLink,
+  Card,
+  CardBody,
+  EmptyState,
+  MatchStatusBadge,
+} from "@/components/ui";
 import { auth } from "@/lib/auth";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
@@ -44,125 +52,110 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
   }
 
   const session = await auth();
-  const firstName = session?.user?.name?.split(" ")[0] ?? "você";
+  const fullName = session?.user?.name ?? "você";
+  const firstName = fullName.split(" ")[0] ?? "você";
 
   const { pelada, membership } = ctx;
   const upcoming = await getNextUpcomingMatch(pelada.id);
+  const isAdmin = membership.role === "admin";
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--color-brand)] text-white shadow-[var(--shadow-brand)]">
-          <BallGlyph size={28} />
-        </div>
+      <section className="flex items-center gap-3">
+        <Avatar name={fullName} tone="brand" size="lg" />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
-            Olá, {firstName} 👋
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
+            E aí, {firstName}
           </p>
-          <h1 className="truncate text-2xl font-extrabold tracking-tight">{pelada.name}</h1>
+          <h1 className="truncate text-3xl font-extrabold leading-tight tracking-tight">
+            {pelada.name}
+          </h1>
         </div>
-        <Badge tone={membership.role === "admin" ? "brand" : "neutral"} size="sm">
+        <Badge
+          tone={isAdmin ? "brand" : membership.role === "referee" ? "info" : "neutral"}
+          size="sm"
+        >
           {ROLE_LABELS[membership.role] ?? membership.role}
         </Badge>
-      </div>
+      </section>
 
-      {pelada.description && (
-        <p className="-mt-2 text-sm text-[color:var(--color-ink-soft)]">{pelada.description}</p>
-      )}
-
-      <UpcomingMatchCard
+      <UpcomingMatchHero
         slug={pelada.slug}
         maxPlayers={pelada.maxPlayers}
-        isAdmin={membership.role === "admin"}
+        isAdmin={isAdmin}
         upcoming={upcoming}
         defaultLocation={pelada.location}
+        weekdayLabel={WEEKDAY_LABELS[pelada.weekday] ?? pelada.weekday}
+        startTime={pelada.startTime}
       />
 
       <section>
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+        <h2 className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
           Atalhos
         </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <ShortcutCard href={`/p/${pelada.slug}/partidas`} label="Partidas" emoji="📅" />
-          <ShortcutCard href={`/p/${pelada.slug}/ranking`} label="Ranking" emoji="🏆" />
-          <ShortcutCard href={`/p/${pelada.slug}/perfil`} label="Meu perfil" emoji="👤" />
-          {membership.role === "admin" ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <ShortcutCard href={`/p/${pelada.slug}/partidas`} label="Partidas" icon={<CalIcon />} />
+          <ShortcutCard href={`/p/${pelada.slug}/ranking`} label="Ranking" icon={<TrophyIcon />} />
+          <ShortcutCard href={`/p/${pelada.slug}/perfil`} label="Meu perfil" icon={<UserIcon />} />
+          {isAdmin ? (
             <ShortcutCard
               href={`/p/${pelada.slug}/nova-partida`}
               label="Nova partida"
-              emoji="➕"
+              icon={<PlusIcon />}
               tone="brand"
             />
           ) : (
-            <ShortcutCard href="/peladas" label="Trocar pelada" emoji="🔁" />
+            <ShortcutCard href="/peladas" label="Trocar pelada" icon={<SwitchIcon />} />
           )}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+        <h2 className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
           Quando e onde
         </h2>
         <Card>
-          <dl className="grid gap-3 p-5 sm:grid-cols-2">
+          <CardBody className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Info label="Dia">{WEEKDAY_LABELS[pelada.weekday] ?? pelada.weekday}</Info>
             <Info label="Horário">{pelada.startTime}</Info>
             <Info label="Local">{pelada.location}</Info>
-            <Info label="Capacidade">{pelada.maxPlayers} jogadores</Info>
-          </dl>
+            <Info label="Capacidade">{pelada.maxPlayers}</Info>
+          </CardBody>
           {pelada.address && (
-            <p className="border-t border-[color:var(--color-border)] px-5 py-3 text-xs text-[color:var(--color-ink-soft)]">
+            <div className="border-t border-[color:var(--color-border)] px-5 py-3 text-xs text-[color:var(--color-ink-soft)]">
               📍 {pelada.address}
-            </p>
+            </div>
           )}
         </Card>
       </section>
 
-      {membership.role === "admin" && (
-        <InvitePanel slug={pelada.slug} inviteToken={pelada.inviteToken} />
+      {pelada.description && (
+        <p className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-5 py-4 text-sm text-[color:var(--color-ink-soft)]">
+          💬 {pelada.description}
+        </p>
       )}
+
+      {isAdmin && <InvitePanel slug={pelada.slug} inviteToken={pelada.inviteToken} />}
     </div>
   );
 }
 
-function ShortcutCard({
-  href,
-  label,
-  emoji,
-  tone = "default",
-}: {
-  href: string;
-  label: string;
-  emoji: string;
-  tone?: "default" | "brand";
-}) {
-  return (
-    <Link
-      href={href}
-      className={`group flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-all hover:shadow-[var(--shadow-md)] ${
-        tone === "brand"
-          ? "border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand-ink)]"
-          : "border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-ink)]"
-      }`}
-    >
-      <span className="text-2xl">{emoji}</span>
-      <span className="text-xs font-bold">{label}</span>
-    </Link>
-  );
-}
-
-function UpcomingMatchCard({
+function UpcomingMatchHero({
   slug,
   maxPlayers,
   isAdmin,
   upcoming,
   defaultLocation,
+  weekdayLabel,
+  startTime,
 }: {
   slug: string;
   maxPlayers: number;
   isAdmin: boolean;
   upcoming: Awaited<ReturnType<typeof getNextUpcomingMatch>>;
   defaultLocation: string;
+  weekdayLabel: string;
+  startTime: string;
 }) {
   if (!upcoming) {
     return (
@@ -187,7 +180,7 @@ function UpcomingMatchCard({
         title="Nenhuma partida agendada"
         description={
           isAdmin
-            ? "Bora marcar a próxima e abrir a lista pra galera."
+            ? `Próxima ${weekdayLabel.toLowerCase()} às ${startTime}? Agenda aí.`
             : "Quando o admin agendar, ela aparece aqui."
         }
         action={
@@ -203,53 +196,106 @@ function UpcomingMatchCard({
 
   const { match, confirmedCount, waitlistCount } = upcoming;
   const dateLabel = MATCH_DATE_FORMATTER.format(match.scheduledFor);
+  const timeLabel = TIME_FORMATTER.format(match.scheduledFor);
   const pct = Math.min(100, Math.round((confirmedCount / maxPlayers) * 100));
+  const full = pct >= 100;
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-[color:var(--color-brand)]/30 bg-[color:var(--color-surface-raised)] shadow-[var(--shadow-md)]">
-      <div className="bg-brand-gradient px-5 py-4 text-white">
+    <Link
+      href={`/p/${slug}/m/${match.id}`}
+      className="group relative block overflow-hidden rounded-3xl border border-[color:var(--color-brand)]/30 bg-[color:var(--color-surface-raised)] shadow-[var(--shadow-md)] transition-shadow hover:shadow-[var(--shadow-brand)]"
+    >
+      {/* glow halo */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[color:var(--color-brand)] opacity-20 blur-3xl"
+      />
+
+      <div className="relative space-y-5 p-5">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-white/85">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-brand)]">
             Próxima partida
           </p>
           <MatchStatusBadge status={match.status} />
         </div>
-        <p className="mt-1 text-2xl font-extrabold leading-tight tracking-tight first-letter:capitalize">
-          {dateLabel}
-        </p>
-        <p className="mt-1 text-sm text-white/85">📍 {match.locationOverride ?? defaultLocation}</p>
-      </div>
 
-      <div className="space-y-4 px-5 py-4">
         <div>
+          <p className="text-2xl font-extrabold leading-tight tracking-tight text-[color:var(--color-ink)] first-letter:capitalize">
+            {dateLabel}
+          </p>
+          <p className="mt-1 flex items-baseline gap-2">
+            <span className="text-5xl font-extrabold tabular-nums tracking-tighter text-[color:var(--color-brand)]">
+              {timeLabel}
+            </span>
+            <span className="text-sm text-[color:var(--color-ink-muted)]">
+              · {match.locationOverride ?? defaultLocation}
+            </span>
+          </p>
+        </div>
+
+        <div className="space-y-2">
           <div className="flex items-baseline justify-between">
-            <div className="space-x-1">
+            <p className="text-sm text-[color:var(--color-ink-soft)]">
               <span className="text-2xl font-extrabold tabular-nums text-[color:var(--color-ink)]">
                 {confirmedCount}
               </span>
-              <span className="text-sm text-[color:var(--color-ink-muted)]">
-                / {maxPlayers} confirmados
-              </span>
-            </div>
+              <span className="text-[color:var(--color-ink-muted)]"> / {maxPlayers}</span>
+              <span className="ml-1.5">confirmados</span>
+            </p>
             {waitlistCount > 0 && (
               <Badge tone="warning" size="sm">
                 +{waitlistCount} na espera
               </Badge>
             )}
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[color:var(--color-surface-muted)]">
+          <div className="h-2 overflow-hidden rounded-full bg-[color:var(--color-surface-muted)]">
             <div
-              className="h-full rounded-full bg-[color:var(--color-brand)] transition-all"
+              className={`h-full rounded-full transition-all ${full ? "bg-[color:var(--color-warning)]" : "bg-[color:var(--color-brand)]"}`}
               style={{ width: `${pct}%` }}
             />
           </div>
         </div>
 
-        <ButtonLink href={`/p/${slug}/m/${match.id}`} variant="primary" size="lg" fullWidth>
-          Abrir partida →
-        </ButtonLink>
+        <div className="flex items-center justify-between text-sm font-bold text-[color:var(--color-brand)] transition-transform group-hover:translate-x-0.5">
+          <span>Abrir partida</span>
+          <span aria-hidden="true">→</span>
+        </div>
       </div>
-    </section>
+    </Link>
+  );
+}
+
+function ShortcutCard({
+  href,
+  label,
+  icon,
+  tone = "default",
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  tone?: "default" | "brand";
+}) {
+  return (
+    <Link
+      href={href}
+      className={`group flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all active:scale-95 ${
+        tone === "brand"
+          ? "border-[color:var(--color-brand)]/40 bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] hover:shadow-[var(--shadow-brand)]"
+          : "border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] text-[color:var(--color-ink)] hover:border-[color:var(--color-border-strong)]"
+      }`}
+    >
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+          tone === "brand"
+            ? "bg-[color:var(--color-brand)] text-[color:var(--color-brand-ink)]"
+            : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-brand)]"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="text-sm font-bold leading-tight">{label}</span>
+    </Link>
   );
 }
 
@@ -257,6 +303,10 @@ const MATCH_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
   weekday: "long",
   day: "2-digit",
   month: "long",
+  timeZone: "America/Sao_Paulo",
+});
+
+const TIME_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
   hour: "2-digit",
   minute: "2-digit",
   timeZone: "America/Sao_Paulo",
@@ -265,10 +315,104 @@ const MATCH_DATE_FORMATTER = new Intl.DateTimeFormat("pt-BR", {
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
+      <dt className="text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
         {label}
       </dt>
       <dd className="mt-0.5 text-base font-bold text-[color:var(--color-ink)]">{children}</dd>
     </div>
+  );
+}
+
+function CalIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <title>Partidas</title>
+      <rect x="3" y="5" width="18" height="16" rx="2.5" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+function TrophyIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <title>Ranking</title>
+      <path d="M7 4h10v5a5 5 0 0 1-10 0Z" />
+      <path d="M17 5h3v3a3 3 0 0 1-3 3M7 5H4v3a3 3 0 0 0 3 3" />
+      <path d="M9 21h6M10 17h4l-.5 4h-3Z" />
+    </svg>
+  );
+}
+function UserIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <title>Perfil</title>
+      <circle cx="12" cy="8.5" r="3.5" />
+      <path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6" />
+    </svg>
+  );
+}
+function PlusIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.6"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <title>Nova</title>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+function SwitchIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <title>Trocar</title>
+      <path d="M7 7h12l-3-3M17 17H5l3 3" />
+    </svg>
   );
 }

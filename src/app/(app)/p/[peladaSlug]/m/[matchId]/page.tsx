@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  Avatar,
   Badge,
   ButtonLink,
   Card,
@@ -89,52 +90,62 @@ export default async function MatchPage({ params }: { params: Params }) {
     <div className="space-y-5">
       <Link
         href={`/p/${peladaSlug}/partidas`}
-        className="inline-block text-sm text-[color:var(--color-ink-soft)] underline-offset-4 hover:underline"
+        className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-[color:var(--color-ink-muted)] underline-offset-4 hover:text-[color:var(--color-brand)] hover:underline"
       >
         ← Partidas
       </Link>
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
+      {/* hero header (compact, dark-style) */}
+      <header className="relative overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-raised)] p-5 shadow-[var(--shadow-sm)]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-10 -top-20 h-44 w-44 rounded-full bg-[color:var(--color-brand)] opacity-10 blur-3xl"
+        />
+        <div className="relative space-y-2">
           <MatchStatusBadge status={match.status} />
-          <h1 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight first-letter:capitalize">
+          <h1 className="text-2xl font-extrabold leading-tight tracking-tight first-letter:capitalize sm:text-3xl">
             {DATE_FORMATTER.format(match.scheduledFor)}
           </h1>
-          <p className="mt-0.5 text-2xl font-extrabold tabular-nums text-[color:var(--color-ink-soft)]">
+          <p className="text-5xl font-extrabold tabular-nums leading-none tracking-tighter text-[color:var(--color-brand)]">
             {TIME_FORMATTER.format(match.scheduledFor)}
           </p>
-          <p className="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+          <p className="text-sm text-[color:var(--color-ink-soft)]">
             📍 {match.locationOverride ?? ctx.pelada.location}
           </p>
         </div>
       </header>
 
       {match.notes && (
-        <p className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-ink-soft)]">
+        <p className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-ink-soft)]">
           💬 {match.notes}
         </p>
       )}
 
       {rosterOpen && (
         <Card tone={myEntry?.status === "confirmed" ? "brand" : "default"}>
-          <CardBody>
+          <CardBody className="space-y-3">
             <CardTitle>Sua presença</CardTitle>
-            <p className="mt-1 text-sm text-[color:var(--color-ink)]">
-              {myEntry?.status === "confirmed"
-                ? "✓ Você tá confirmado pra essa partida."
-                : myEntry?.status === "waitlist"
-                  ? `Você está na lista de espera (posição ${waitlist.findIndex((w) => w.membershipId === ctx.membership.id) + 1}).`
-                  : myEntry?.status === "declined"
-                    ? "Você desistiu. Pode confirmar de novo se mudar de ideia."
-                    : "Você ainda não respondeu."}
+            <p className="text-sm text-[color:var(--color-ink)]">
+              {myEntry?.status === "confirmed" ? (
+                <>
+                  ✓ Você tá confirmado.{" "}
+                  <span className="text-[color:var(--color-ink-muted)]">Vamo joga!</span>
+                </>
+              ) : myEntry?.status === "waitlist" ? (
+                `Você está na lista de espera (posição ${
+                  waitlist.findIndex((w) => w.membershipId === ctx.membership.id) + 1
+                }).`
+              ) : myEntry?.status === "declined" ? (
+                "Você desistiu. Pode confirmar de novo se mudar de ideia."
+              ) : (
+                "Você ainda não respondeu."
+              )}
             </p>
-            <div className="mt-4">
-              <AttendanceButtons
-                slug={peladaSlug}
-                matchId={matchId}
-                currentStatus={myEntry?.status ?? null}
-              />
-            </div>
+            <AttendanceButtons
+              slug={peladaSlug}
+              matchId={matchId}
+              currentStatus={myEntry?.status ?? null}
+            />
           </CardBody>
         </Card>
       )}
@@ -146,7 +157,7 @@ export default async function MatchPage({ params }: { params: Params }) {
           size="xl"
           fullWidth
         >
-          Sortear times →
+          🎲 Sortear times
         </ButtonLink>
       )}
 
@@ -202,7 +213,9 @@ export default async function MatchPage({ params }: { params: Params }) {
 
       {showRosterPanels && (
         <RosterSection
-          title={`Confirmados ${confirmed.length}/${ctx.pelada.maxPlayers}`}
+          title="Confirmados"
+          count={confirmed.length}
+          max={ctx.pelada.maxPlayers}
           emptyLabel="Ninguém confirmou ainda."
           rows={confirmed}
           highlightMembershipId={ctx.membership.id}
@@ -211,7 +224,8 @@ export default async function MatchPage({ params }: { params: Params }) {
 
       {showRosterPanels && waitlist.length > 0 && (
         <RosterSection
-          title={`Lista de espera (${waitlist.length})`}
+          title="Lista de espera"
+          count={waitlist.length}
           emptyLabel="Lista vazia."
           rows={waitlist}
           highlightMembershipId={ctx.membership.id}
@@ -221,7 +235,8 @@ export default async function MatchPage({ params }: { params: Params }) {
 
       {showRosterPanels && declined.length > 0 && (
         <RosterSection
-          title={`Desistiram (${declined.length})`}
+          title="Desistiram"
+          count={declined.length}
           emptyLabel=""
           rows={declined}
           highlightMembershipId={ctx.membership.id}
@@ -230,7 +245,7 @@ export default async function MatchPage({ params }: { params: Params }) {
       )}
 
       {cancellable && (
-        <Card tone="danger" className="border-[color:var(--color-danger)]/30">
+        <Card tone="danger" className="border-[color:var(--color-danger)]/40">
           <CardHeader className="border-[color:var(--color-danger)]/20">
             <CardTitle className="text-[color:var(--color-danger)]">Zona perigosa</CardTitle>
           </CardHeader>
@@ -248,6 +263,8 @@ export default async function MatchPage({ params }: { params: Params }) {
 
 function RosterSection({
   title,
+  count,
+  max,
   emptyLabel,
   rows,
   highlightMembershipId,
@@ -255,6 +272,8 @@ function RosterSection({
   showPosition,
 }: {
   title: string;
+  count: number;
+  max?: number;
   emptyLabel: string;
   rows: Array<{ entryId: string; membershipId: string; displayName: string }>;
   highlightMembershipId: string;
@@ -263,8 +282,12 @@ function RosterSection({
 }) {
   return (
     <section>
-      <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-[color:var(--color-ink-muted)]">
-        {title}
+      <h2 className="mb-2 flex items-baseline gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
+        <span>{title}</span>
+        <span className="text-[color:var(--color-ink)]">
+          {count}
+          {max ? `/${max}` : ""}
+        </span>
       </h2>
       {rows.length === 0 ? (
         <p className="text-sm text-[color:var(--color-ink-muted)]">{emptyLabel}</p>
@@ -275,25 +298,26 @@ function RosterSection({
             return (
               <li
                 key={r.entryId}
-                className={`flex items-center justify-between gap-3 border-b border-[color:var(--color-border)] px-4 py-3 last:border-0 ${
-                  muted ? "text-[color:var(--color-ink-muted)]" : ""
-                }`}
+                className={`flex items-center gap-3 border-b border-[color:var(--color-border)] px-4 py-2.5 last:border-0 ${
+                  muted ? "opacity-60" : ""
+                } ${isMe ? "bg-[color:var(--color-brand-soft)]" : ""}`}
               >
-                <span className="flex items-center gap-2">
-                  {showPosition && (
-                    <span className="w-5 text-right font-mono text-xs text-[color:var(--color-ink-muted)]">
-                      {idx + 1}.
-                    </span>
-                  )}
-                  <span className={isMe ? "font-bold" : "font-medium"}>
-                    {r.displayName}
-                    {isMe && (
-                      <Badge tone="brand" size="xs" className="ml-2">
-                        Você
-                      </Badge>
-                    )}
+                {showPosition && (
+                  <span className="w-5 text-right font-mono text-xs font-bold text-[color:var(--color-ink-muted)] tabular-nums">
+                    {idx + 1}
                   </span>
+                )}
+                <Avatar name={r.displayName} size="sm" tone={isMe ? "brand" : "default"} />
+                <span
+                  className={`flex-1 truncate text-sm ${isMe ? "font-extrabold text-[color:var(--color-brand)]" : "font-bold"}`}
+                >
+                  {r.displayName}
                 </span>
+                {isMe && (
+                  <Badge tone="brand" size="xs">
+                    Você
+                  </Badge>
+                )}
               </li>
             );
           })}

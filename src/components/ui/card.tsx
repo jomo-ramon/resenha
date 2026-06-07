@@ -7,8 +7,7 @@ type Elevation = "flat" | "raised" | "floating";
 const tones: Record<Tone, string> = {
   default: "bg-[color:var(--color-surface-raised)] border-[color:var(--color-border)]",
   muted: "bg-[color:var(--color-surface-muted)] border-[color:var(--color-border)]",
-  brand:
-    "bg-[color:var(--color-brand-soft)] border-[color:var(--color-brand)]/30 dark:border-[color:var(--color-brand)]/50",
+  brand: "bg-[color:var(--color-brand-soft)] border-[color:var(--color-brand)]/40",
   danger: "bg-[color:var(--color-danger-soft)] border-[color:var(--color-danger)]/30",
 };
 
