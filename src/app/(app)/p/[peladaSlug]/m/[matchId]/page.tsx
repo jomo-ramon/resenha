@@ -12,14 +12,17 @@ import {
   MatchStatusBadge,
 } from "@/components/ui";
 import { canCancelMatch, isRosterAcceptingResponses } from "@/lib/domain/match";
+import { canAssignReferee, canRefereeMatch, isDesignatedReferee } from "@/lib/domain/permissions";
 import { TEAM_DARK, TEAM_LIGHT } from "@/lib/domain/team-draft";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
 import { getMatchWithRoster } from "@/server/queries/matches";
+import { listPeladaMembers } from "@/server/queries/peladas";
 import { AttendanceButtons } from "./attendance-buttons";
 import { CancelMatchButton } from "./cancel-match-button";
 import { ClearDraftButton } from "./clear-draft-button";
 import { RefereePanel } from "./referee-panel";
+import { RefereePicker } from "./referee-picker";
 import { StartMatchButton } from "./start-match-button";
 import { MatchEventsTimeline, MatchHighlights, TeamsBoard } from "./teams-board";
 
@@ -58,7 +61,7 @@ export default async function MatchPage({ params }: { params: Params }) {
   const detail = await getMatchWithRoster(ctx.pelada.id, matchId);
   if (!detail) notFound();
 
-  const { match, roster, teams, events } = detail;
+  const { match, roster, teams, events, referee } = detail;
 
   const confirmed = roster.filter((r) => r.status === "confirmed");
   const waitlist = roster.filter((r) => r.status === "waitlist");
@@ -66,9 +69,21 @@ export default async function MatchPage({ params }: { params: Params }) {
 
   const myEntry = roster.find((r) => r.membershipId === ctx.membership.id) ?? null;
   const isAdmin = ctx.membership.role === "admin";
-  const isReferee = isAdmin || ctx.membership.role === "referee";
+  const isReferee = canRefereeMatch(ctx.membership, match);
+  const iAmTheDesignatedReferee = isDesignatedReferee(ctx.membership, match);
+  const canChangeReferee = canAssignReferee(ctx.membership, match);
   const rosterOpen = isRosterAcceptingResponses(match.status);
   const cancellable = isAdmin && canCancelMatch(match.status);
+
+  const allMembers = canChangeReferee ? await listPeladaMembers(ctx.pelada.id) : [];
+  const refereeCandidates = allMembers.filter(
+    (m) =>
+      !roster.some(
+        (r) =>
+          r.membershipId === m.membershipId &&
+          (r.status === "confirmed" || r.status === "waitlist"),
+      ),
+  );
 
   const rosterLookup = new Map<string, string>();
   for (const r of roster) rosterLookup.set(r.membershipId, r.displayName);
@@ -121,7 +136,52 @@ export default async function MatchPage({ params }: { params: Params }) {
         </p>
       )}
 
-      {rosterOpen && (
+      {/* juiz card */}
+      {(referee || canChangeReferee) && match.status !== "cancelled" && (
+        <Card tone={iAmTheDesignatedReferee ? "brand" : "default"}>
+          <CardBody className="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--color-accent-soft)] text-2xl"
+            >
+              🧑‍⚖️
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[color:var(--color-ink-muted)]">
+                Juiz da partida
+              </p>
+              {referee ? (
+                <p className="truncate text-base font-extrabold">
+                  {referee.displayName}
+                  {iAmTheDesignatedReferee && (
+                    <span className="ml-1.5 text-[color:var(--color-brand)]">(você)</span>
+                  )}
+                </p>
+              ) : (
+                <p className="text-sm text-[color:var(--color-ink-soft)]">
+                  Sem juiz designado — admin apita.
+                </p>
+              )}
+            </div>
+            {canChangeReferee && (
+              <RefereePicker
+                slug={peladaSlug}
+                matchId={matchId}
+                hasReferee={referee !== null}
+                candidates={refereeCandidates.map((m) => ({
+                  membershipId: m.membershipId,
+                  displayName: m.displayName,
+                  shirtNumber: m.shirtNumber,
+                  role: m.role,
+                  isCurrent: m.membershipId === referee?.membershipId,
+                }))}
+              />
+            )}
+          </CardBody>
+        </Card>
+      )}
+
+      {rosterOpen && !iAmTheDesignatedReferee && (
         <Card tone={myEntry?.status === "confirmed" ? "brand" : "default"}>
           <CardBody className="space-y-3">
             <CardTitle>Sua presença</CardTitle>
@@ -146,6 +206,16 @@ export default async function MatchPage({ params }: { params: Params }) {
               matchId={matchId}
               currentStatus={myEntry?.status ?? null}
             />
+          </CardBody>
+        </Card>
+      )}
+
+      {rosterOpen && iAmTheDesignatedReferee && (
+        <Card tone="brand">
+          <CardBody>
+            <p className="text-sm font-bold text-[color:var(--color-brand)]">
+              🧑‍⚖️ Você é o juiz dessa partida. Não precisa confirmar presença — você apita.
+            </p>
           </CardBody>
         </Card>
       )}

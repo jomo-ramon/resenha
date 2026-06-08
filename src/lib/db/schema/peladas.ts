@@ -22,7 +22,14 @@ export type Weekday =
   | "saturday"
   | "sunday";
 
-export type MembershipRole = "admin" | "referee" | "player";
+/**
+ * Membership role — perpetual position in the pelada.
+ *
+ * `referee` is NOT a role here: refereeing is per-match, set on
+ * `matches.activeRefereeId` by the admin. A "juiz" is just a player
+ * the admin picked to officiate that one match.
+ */
+export type MembershipRole = "admin" | "player";
 
 export type MembershipStatus = "active" | "inactive" | "invited";
 

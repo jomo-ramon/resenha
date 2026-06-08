@@ -13,9 +13,10 @@ import { db } from "@/lib/db/client";
 import { matchEvents, matches, teams } from "@/lib/db/schema";
 import { canTransition } from "@/lib/domain/match";
 import { computeScore } from "@/lib/domain/match-event";
+import { canRefereeMatch } from "@/lib/domain/permissions";
 import { TEAM_DARK, TEAM_LIGHT } from "@/lib/domain/team-draft";
 import { AppError, ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
-import { assertRole, getPeladaContext } from "@/lib/multitenancy";
+import { getPeladaContext } from "@/lib/multitenancy";
 
 export type FinishMatchState = {
   status: "idle" | "success" | "error";
@@ -30,16 +31,22 @@ export async function finishMatchAction(
 ): Promise<FinishMatchState> {
   try {
     const ctx = await getPeladaContext(slug);
-    assertRole(ctx, "admin", "referee");
 
     await db.transaction(async (tx) => {
       const [match] = await tx
-        .select({ id: matches.id, status: matches.status })
+        .select({
+          id: matches.id,
+          status: matches.status,
+          activeRefereeId: matches.activeRefereeId,
+        })
         .from(matches)
         .where(and(eq(matches.id, matchId), eq(matches.peladaId, ctx.pelada.id)))
         .limit(1);
 
       if (!match) throw new NotFoundError("Match", matchId);
+      if (!canRefereeMatch(ctx.membership, match)) {
+        throw new ForbiddenError("user is not allowed to referee this match");
+      }
       if (!canTransition(match.status, "finished")) {
         throw new ConflictError("A partida não está em andamento.");
       }

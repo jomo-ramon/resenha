@@ -30,7 +30,6 @@ const WEEKDAY_LABELS: Record<string, string> = {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
-  referee: "Juiz",
   player: "Jogador",
 };
 
@@ -71,10 +70,7 @@ export default async function PeladaDashboardPage({ params }: { params: Params }
             {pelada.name}
           </h1>
         </div>
-        <Badge
-          tone={isAdmin ? "brand" : membership.role === "referee" ? "info" : "neutral"}
-          size="sm"
-        >
+        <Badge tone={isAdmin ? "brand" : "neutral"} size="sm">
           {ROLE_LABELS[membership.role] ?? membership.role}
         </Badge>
       </section>

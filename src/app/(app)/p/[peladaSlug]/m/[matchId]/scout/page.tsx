@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Badge } from "@/components/ui";
+import { canRefereeMatch } from "@/lib/domain/permissions";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { getPeladaContext } from "@/lib/multitenancy";
 import { getMatchWithRoster, listMatchRatings } from "@/server/queries/matches";
@@ -38,9 +39,9 @@ export default async function ScoutPage({ params }: { params: Params }) {
   const detail = await getMatchWithRoster(ctx.pelada.id, matchId);
   if (!detail) notFound();
 
-  const isAdmin = ctx.membership.role === "admin";
-  const isReferee = isAdmin || ctx.membership.role === "referee";
-  if (!isReferee) redirect(`/p/${peladaSlug}/m/${matchId}`);
+  if (!canRefereeMatch(ctx.membership, detail.match)) {
+    redirect(`/p/${peladaSlug}/m/${matchId}`);
+  }
   if (detail.match.status !== "finished") {
     redirect(`/p/${peladaSlug}/m/${matchId}`);
   }

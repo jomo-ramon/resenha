@@ -23,6 +23,7 @@ export const createMatchInputSchema = z.object({
     ),
   locationOverride: z.string().trim().max(120, "Local muito longo.").optional().or(z.literal("")),
   notes: z.string().trim().max(280, "Observação muito longa.").optional().or(z.literal("")),
+  refereeMembershipId: z.string().trim().optional().or(z.literal("")),
 });
 
 export type CreateMatchInput = z.infer<typeof createMatchInputSchema>;

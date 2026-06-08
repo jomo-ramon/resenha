@@ -38,6 +38,13 @@ export const matches = pgTable("match", {
   scheduledFor: timestamp("scheduledFor", { mode: "date", withTimezone: true }).notNull(),
   locationOverride: text("locationOverride"),
   status: text("status").$type<MatchStatus>().notNull().default("scheduled"),
+  /**
+   * Membership designated by the admin to referee this match.
+   *
+   * A juiz is a regular player picked just for this match — they don't
+   * appear in the roster (can't play and apitar at the same time).
+   * If `null`, any admin of the pelada can officiate (fallback).
+   */
   activeRefereeId: text("activeRefereeId").references(() => memberships.id, {
     onDelete: "set null",
   }),

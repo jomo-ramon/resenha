@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { assertRole, getPeladaContext } from "@/lib/multitenancy";
+import { listPeladaMembers } from "@/server/queries/peladas";
 import { NovaPartidaForm } from "./nova-partida-form";
 
 type Params = Promise<{ peladaSlug: string }>;
@@ -14,14 +15,18 @@ export const metadata: Metadata = {
 export default async function NovaPartidaPage({ params }: { params: Params }) {
   const { peladaSlug } = await params;
 
+  let peladaId: string;
   try {
     const ctx = await getPeladaContext(peladaSlug);
     assertRole(ctx, "admin");
+    peladaId = ctx.pelada.id;
   } catch (error) {
     if (error instanceof NotFoundError) notFound();
     if (error instanceof ForbiddenError) redirect(`/p/${peladaSlug}`);
     throw error;
   }
+
+  const members = await listPeladaMembers(peladaId);
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -42,7 +47,14 @@ export default async function NovaPartidaPage({ params }: { params: Params }) {
         </p>
       </header>
 
-      <NovaPartidaForm slug={peladaSlug} />
+      <NovaPartidaForm
+        slug={peladaSlug}
+        members={members.map((m) => ({
+          membershipId: m.membershipId,
+          displayName: m.displayName,
+          role: m.role,
+        }))}
+      />
     </div>
   );
 }

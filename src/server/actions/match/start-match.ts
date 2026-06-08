@@ -9,8 +9,9 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db/client";
 import { matches } from "@/lib/db/schema";
 import { canTransition } from "@/lib/domain/match";
+import { canRefereeMatch } from "@/lib/domain/permissions";
 import { AppError, ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
-import { assertRole, getPeladaContext } from "@/lib/multitenancy";
+import { getPeladaContext } from "@/lib/multitenancy";
 
 export type StartMatchState = {
   status: "idle" | "success" | "error";
@@ -25,15 +26,21 @@ export async function startMatchAction(
 ): Promise<StartMatchState> {
   try {
     const ctx = await getPeladaContext(slug);
-    assertRole(ctx, "admin", "referee");
 
     const [match] = await db
-      .select({ id: matches.id, status: matches.status })
+      .select({
+        id: matches.id,
+        status: matches.status,
+        activeRefereeId: matches.activeRefereeId,
+      })
       .from(matches)
       .where(and(eq(matches.id, matchId), eq(matches.peladaId, ctx.pelada.id)))
       .limit(1);
 
     if (!match) throw new NotFoundError("Match", matchId);
+    if (!canRefereeMatch(ctx.membership, match)) {
+      throw new ForbiddenError("user is not allowed to referee this match");
+    }
     if (!canTransition(match.status, "in_progress")) {
       throw new ConflictError("Não dá pra começar a partida nesse estado.");
     }

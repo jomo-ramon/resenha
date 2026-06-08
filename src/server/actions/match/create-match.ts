@@ -8,12 +8,13 @@
  * roster" step at MVP scope.
  */
 
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db/client";
-import { matches } from "@/lib/db/schema";
+import { matches, memberships } from "@/lib/db/schema";
 import { type CreateMatchInput, createMatchInputSchema } from "@/lib/domain/match";
-import { AppError, ForbiddenError, NotFoundError } from "@/lib/errors";
+import { AppError, ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
 import { assertRole, getPeladaContext } from "@/lib/multitenancy";
 
 export type CreateMatchState = {
@@ -37,6 +38,7 @@ export async function createMatchAction(
       scheduledFor: formData.get("scheduledFor"),
       locationOverride: formData.get("locationOverride"),
       notes: formData.get("notes"),
+      refereeMembershipId: formData.get("refereeMembershipId"),
     };
 
     const parsed = createMatchInputSchema.safeParse(raw);
@@ -56,6 +58,21 @@ export async function createMatchAction(
     }
 
     const input = parsed.data;
+    const refereeId =
+      input.refereeMembershipId && input.refereeMembershipId.length > 0
+        ? input.refereeMembershipId
+        : null;
+
+    if (refereeId) {
+      const [ref] = await db
+        .select({ id: memberships.id })
+        .from(memberships)
+        .where(and(eq(memberships.id, refereeId), eq(memberships.peladaId, ctx.pelada.id)))
+        .limit(1);
+      if (!ref) {
+        throw new ConflictError("Juiz escolhido não é membro dessa pelada.");
+      }
+    }
 
     const [created] = await db
       .insert(matches)
@@ -65,6 +82,7 @@ export async function createMatchAction(
         locationOverride: input.locationOverride || null,
         notes: input.notes || null,
         status: "roster_open",
+        activeRefereeId: refereeId,
       })
       .returning({ id: matches.id });
 
@@ -80,6 +98,9 @@ export async function createMatchAction(
     }
     if (error instanceof ForbiddenError) {
       return { status: "error", message: "Só admins podem agendar partida." };
+    }
+    if (error instanceof ConflictError) {
+      return { status: "error", message: error.message };
     }
     if (error instanceof AppError) {
       return { status: "error", message: "Não foi possível agendar a partida." };

@@ -9,8 +9,9 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db/client";
 import { matchEvents, matches } from "@/lib/db/schema";
+import { canRefereeMatch } from "@/lib/domain/permissions";
 import { AppError, ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
-import { assertRole, getPeladaContext } from "@/lib/multitenancy";
+import { getPeladaContext } from "@/lib/multitenancy";
 
 export type RemoveEventState = {
   status: "idle" | "success" | "error";
@@ -26,15 +27,21 @@ export async function removeMatchEventAction(
 ): Promise<RemoveEventState> {
   try {
     const ctx = await getPeladaContext(slug);
-    assertRole(ctx, "admin", "referee");
 
     const [match] = await db
-      .select({ id: matches.id, status: matches.status })
+      .select({
+        id: matches.id,
+        status: matches.status,
+        activeRefereeId: matches.activeRefereeId,
+      })
       .from(matches)
       .where(and(eq(matches.id, matchId), eq(matches.peladaId, ctx.pelada.id)))
       .limit(1);
 
     if (!match) throw new NotFoundError("Match", matchId);
+    if (!canRefereeMatch(ctx.membership, match)) {
+      throw new ForbiddenError("user is not allowed to referee this match");
+    }
     if (match.status !== "in_progress" && match.status !== "finished") {
       throw new ConflictError("Não dá pra editar eventos nesse estado.");
     }

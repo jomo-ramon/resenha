@@ -184,6 +184,21 @@ Validação humana só **no final de cada bloco** (visual + smoke test).
 8. **Algoritmo de balanceamento** — quando a gente tiver ratings (F2/F3).
 9. **`activeRefereeId` lock otimista** — pra ter mais de 1 admin sem step on each other.
 
+### ✅ Concluído nesta sessão (08/06 manhã)
+
+- **Roles refeitas** — `MembershipRole` agora é só `"admin" | "player"`. Juiz virou conceito **por partida**, não mais role perpétua:
+  - `matches.activeRefereeId` é o juiz designado daquela partida (admin escolhe qualquer membro)
+  - Domain helper `lib/domain/permissions.ts` com `canRefereeMatch`, `isDesignatedReferee`, `canAssignReferee` (10 testes)
+  - Server action `setMatchRefereeAction` (admin-only); bloqueia se o escolhido já tá no roster como confirmed/waitlist
+  - `confirmAttendance` bloqueia se o membro é o juiz designado
+  - Todas as actions de match (start/finish/add-event/remove-event/save-scout) agora usam `canRefereeMatch` em vez de `assertRole(..., "referee")`
+  - Migration `0003_demote_legacy_referee_role.sql` (data migration: UPDATE membership SET role='player' WHERE role='referee')
+- **UI do juiz**:
+  - Card "Juiz da partida" na page do match com botão "Escalar/Trocar juiz" pra admin (Sheet picker mobile-friendly)
+  - Form de nova partida ganhou dropdown "Quem apita"
+  - "Sua presença" some pro juiz designado e mostra mensagem "Você apita essa"
+  - Badge de role no dashboard só mostra Admin/Jogador (sem mais "Juiz")
+
 ### ✅ Concluído nesta sessão (madrugada 07/06)
 
 - **Seed dev** (`pnpm db:seed`) — cria `seed-cornetas` com 12 jogadores fictícios + 1 partida com lista aberta (9 confirmados). Idempotente: limpa a pelada anterior antes. Requer `SEED_ADMIN_EMAIL=voce@gmail.com`.

@@ -19,9 +19,10 @@ import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { matchEvents, matches, playerRatings, teamPlayers, teams } from "@/lib/db/schema";
 import { matchEventTypeSchema } from "@/lib/domain/match-event";
+import { canRefereeMatch } from "@/lib/domain/permissions";
 import { MAX_RATING, MIN_RATING } from "@/lib/domain/player-rating";
 import { AppError, ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
-import { assertRole, getPeladaContext } from "@/lib/multitenancy";
+import { getPeladaContext } from "@/lib/multitenancy";
 
 const eventCountsSchema = z.record(matchEventTypeSchema, z.coerce.number().int().min(0).max(99));
 
@@ -54,7 +55,6 @@ export async function saveMatchScoutAction(
 ): Promise<SaveScoutState> {
   try {
     const ctx = await getPeladaContext(slug);
-    assertRole(ctx, "admin", "referee");
 
     const payloadRaw = formData.get("payload");
     if (typeof payloadRaw !== "string") {
@@ -77,12 +77,19 @@ export async function saveMatchScoutAction(
     const { players } = parsed.data;
 
     const [match] = await db
-      .select({ id: matches.id, status: matches.status })
+      .select({
+        id: matches.id,
+        status: matches.status,
+        activeRefereeId: matches.activeRefereeId,
+      })
       .from(matches)
       .where(and(eq(matches.id, matchId), eq(matches.peladaId, ctx.pelada.id)))
       .limit(1);
 
     if (!match) throw new NotFoundError("Match", matchId);
+    if (!canRefereeMatch(ctx.membership, match)) {
+      throw new ForbiddenError("user is not allowed to referee this match");
+    }
     if (match.status !== "finished") {
       throw new ConflictError("Scout só pode ser salvo após encerrar a partida.");
     }

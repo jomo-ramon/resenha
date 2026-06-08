@@ -79,11 +79,18 @@ export type MatchEventRow = MatchEvent & {
   displayName: string;
 };
 
+export type RefereeInfo = {
+  membershipId: string;
+  displayName: string;
+  shirtNumber: number | null;
+};
+
 export type MatchDetail = {
   match: Match;
   roster: RosterRow[];
   teams: TeamWithPlayers[];
   events: MatchEventRow[];
+  referee: RefereeInfo | null;
 };
 
 export type MatchListItem = {
@@ -232,7 +239,30 @@ export async function getMatchWithRoster(
     displayName: e.nickname ?? e.userName ?? e.userEmail?.split("@")[0] ?? "Jogador",
   }));
 
-  return { match, roster: rows, teams: teamsWithPlayers, events };
+  let referee: RefereeInfo | null = null;
+  if (match.activeRefereeId) {
+    const [row] = await db
+      .select({
+        membershipId: memberships.id,
+        nickname: memberships.nickname,
+        shirtNumber: memberships.shirtNumber,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(memberships)
+      .innerJoin(users, eq(users.id, memberships.userId))
+      .where(eq(memberships.id, match.activeRefereeId))
+      .limit(1);
+    if (row) {
+      referee = {
+        membershipId: row.membershipId,
+        displayName: row.nickname ?? row.userName ?? row.userEmail?.split("@")[0] ?? "Jogador",
+        shirtNumber: row.shirtNumber,
+      };
+    }
+  }
+
+  return { match, roster: rows, teams: teamsWithPlayers, events, referee };
 }
 
 export async function listRecentMatches(peladaId: string, limit = 5): Promise<Match[]> {

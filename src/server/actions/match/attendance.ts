@@ -55,6 +55,9 @@ export async function confirmAttendanceAction(
     if (!isRosterAcceptingResponses(match.status)) {
       throw new ConflictError("A lista dessa partida não está aberta.");
     }
+    if (match.activeRefereeId === ctx.membership.id) {
+      throw new ConflictError("Você é o juiz dessa partida — não joga essa.");
+    }
 
     await db.transaction(async (tx) => {
       const aggRows = await tx

@@ -157,30 +157,25 @@ async function main() {
   }
   console.log(`   👥  ${phantomMemberships.length} jogadores criados`);
 
-  // promover 1 deles a juiz pra testar permissões
-  if (phantomMemberships[0]) {
-    await db
-      .update(memberships)
-      .set({ role: "referee" })
-      .where(eq(memberships.id, phantomMemberships[0]));
-    console.log(`   🟢  ${PLAYERS[0]?.nickname} promovido a juiz`);
-  }
-
-  // 6) match com lista aberta no próximo sábado
+  // 6) match com lista aberta no próximo sábado — Joaquim escalado como juiz
+  const refereeMembershipId = phantomMemberships[0] ?? null;
   const [match] = await db
     .insert(matches)
     .values({
       peladaId: pelada.id,
       scheduledFor: nextSaturdayAt(16),
       status: "roster_open",
+      activeRefereeId: refereeMembershipId,
       notes: "Trazer colete escuro.",
     })
     .returning();
   if (!match) throw new Error("Falha ao criar match.");
   console.log(`   📅  partida criada (status=roster_open) → ${match.id}`);
+  if (refereeMembershipId) console.log(`   🧑‍⚖️  juiz designado: ${PLAYERS[0]?.nickname}`);
 
-  // 7) confirmar primeiros 9 jogadores (deixa 3 sem responder)
-  const toConfirm = phantomMemberships.slice(0, 9);
+  // 7) confirmar primeiros 9 jogadores (skip juiz, deixa alguns sem responder)
+  const candidates = phantomMemberships.filter((id) => id !== refereeMembershipId);
+  const toConfirm = candidates.slice(0, 9);
   let pos = 1;
   for (const mid of toConfirm) {
     await db.insert(rosterEntries).values({

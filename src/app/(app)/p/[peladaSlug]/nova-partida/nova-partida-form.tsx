@@ -18,7 +18,13 @@ function nextSaturdayLocalDateTime(): string {
   return `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}T${pad(target.getHours())}:${pad(target.getMinutes())}`;
 }
 
-export function NovaPartidaForm({ slug }: { slug: string }) {
+type MemberOption = {
+  membershipId: string;
+  displayName: string;
+  role: "admin" | "player";
+};
+
+export function NovaPartidaForm({ slug, members }: { slug: string; members: MemberOption[] }) {
   const bound = createMatchAction.bind(null, slug);
   const [state, formAction] = useActionState(bound, initialState);
 
@@ -45,6 +51,27 @@ export function NovaPartidaForm({ slug }: { slug: string }) {
           defaultValue={nextSaturdayLocalDateTime()}
           className={inputClass}
         />
+      </Field>
+
+      <Field
+        label="Quem apita"
+        htmlFor="refereeMembershipId"
+        hint="Opcional — o juiz não joga essa partida. Se vazio, admin apita."
+      >
+        <select
+          id="refereeMembershipId"
+          name="refereeMembershipId"
+          defaultValue=""
+          className={inputClass}
+        >
+          <option value="">— Definir depois (admin apita)</option>
+          {members.map((m) => (
+            <option key={m.membershipId} value={m.membershipId}>
+              {m.displayName}
+              {m.role === "admin" ? " (admin)" : ""}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field
